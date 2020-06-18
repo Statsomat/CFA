@@ -131,15 +131,7 @@ shinyUI(fluidPage(
 f1 =~ x1 + x2 + x3
 f2 =~ x4 + x5 + x6
 f3 =~ x7 + x8 + x9
-
-# variances and covariances 
-y1 ~~ y1 
-y1 ~~ y2 
-f1 ~~ f2
-                                    
-# intercepts 
-y1 ~ 1 
-f1 ~ 1", rows=15, cols=100)
+", rows=15, cols=100)
                       
             ),
             

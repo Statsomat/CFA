@@ -18,6 +18,8 @@ df <- df[,params$vars1,drop=FALSE]
 # Call used libraries 
 library(knitr) # kable
 library(fastDummies) # make dummies
+library(lavaan)
+library(semPlot)
 
 eval <- FALSE
 tryCatch({
@@ -61,12 +63,15 @@ df_binary <- df[,cols_binary,drop=FALSE]
 cols_dummy <- sapply(df, function(col) is.character(col) & length(unique(na.omit(col))) > 2)
 df_dummy <-  df[,cols_dummy,drop=FALSE]
 if (ncol(df_dummy)>0) {
-  dummies <- fastDummies::dummy_cols(df_dummy,remove_first_dummy = TRUE)
-  df_binary <- merge(df_binary,dummies,by=0)
+  dummies <- fastDummies::dummy_cols(df_dummy, remove_first_dummy = TRUE, ignore_na=TRUE)
+  dummies2 <- dummies[,-cols_dummy,drop=FALSE]
+  df_binary <- merge(df_binary,dummies2,by="row.names")
 } 
 
 # Put together 
-df_work <- merge(df_num,df_binary)
+df_work <- merge(df_num,df_binary,by="row.names")
+df_work$Row.names <- NULL
+df_work$Row.names.y <-NULL
 
 # Initialize next computations
 eval <- TRUE
@@ -74,7 +79,6 @@ eval <- TRUE
 }, error=function(e) {
   
   stop(safeError("Outputs cannot be generated. Please check your data for consistency."))
- 
   
 }
 
@@ -107,6 +111,12 @@ cat("Observations (rows with at least one non-missing value): ", fill=TRUE)
 cat(dim(df)[1])
 cat("\\newline",fill=TRUE) 
 
+# Missing rows
+if (exists("length_non_complete")){
+  cat("Number of rows that are dropped because they contain no values (all values are missing):", length_non_complete)
+  cat("\\newline",fill=TRUE) 
+}
+
 cat("Variables (columns with at least one non-missing value): ", fill=TRUE)
 cat(dim(df_list)[2])
 cat("\\newline",fill=TRUE) 
@@ -115,6 +125,7 @@ cat("Variables considered continuous: ", fill=TRUE)
 if (exists("df_num")){
   if (ncol(df_num)>0){
     if (sum(rateunique_df )>0){
+      cat(sum(rateunique_df==TRUE),fill=TRUE)
       kable(cols_continuous, col.names = "Variables considered continuous")
     }
   } else {
@@ -128,22 +139,55 @@ cat("Variables considered ordinal: ", fill=TRUE)
 if (exists("df_num")){
   if (ncol(df_num)>0){
     if (sum(rateunique_df==FALSE)>0){
+      cat(sum(rateunique_df==FALSE),fill=TRUE)
       kable(cols_ordinal, col.names = "Variables considered ordinal")
-    }
-  } else {
+    } else {
     
+    cat("0",fill=TRUE)
+    cat("\\newline",fill=TRUE) }
+}}
+
+
+cat("Variables considered binary: ", fill=TRUE)
+if (exists("cols_binary")){
+  if (sum(cols_binary)>0){
+    cat(sum(cols_binary),fill=TRUE)
+    kable(names(which(cols_binary==TRUE)), col.names = "Variables considered binary")
+  } else {
     cat("0",fill=TRUE)
     cat("\\newline",fill=TRUE) }
 }
 
 
-cat("Variables considered binary: ", fill=TRUE)
-if (exists("df_binary")){
-  if (ncol(df_binary)>0){
-      kable(colnames(df_binary), col.names = "Variables considered binary")
+cat("Variables considered norminal and transformed to binary: ", fill=TRUE)
+if (exists("cols_dummy")){
+  if (sum(cols_dummy)>0){
+    cat(sum(cols_dummy),fill=TRUE)
+    kable(colnames(dummies2), col.names = "Binary dummies for nominal variables")
   } else {
     cat("0",fill=TRUE)
     cat("\\newline",fill=TRUE) }
+}
+
+
+# Char with just one unique value not considered
+if (exists("cols_one")){
+  if (sum(cols_one) != 0L){
+    cat("Columns with just one unique value (missings omitted) which are not considered in further computations: ")
+    cat(sum(cols_one) ,fill=TRUE)
+    cols <- names(which(cols_one==1))
+    kable(cols, col.names = "Columns not considered")
+  }
+}
+
+# Char > 10 not considered
+if (exists("cols_catlarge")){
+  if (sum(cols_catlarge) != 0L){
+    cat("Character columns with more than 10 unique values which are not considered in further computations: ")
+    cat(sum(cols_catlarge),fill=TRUE)
+    cols <- names(which(cols_catlarge==1))
+    kable(cols, col.names = "Columns not considered")
+  }
 }
 
 
@@ -154,32 +198,6 @@ if (exists("col_names_missing")){
     cat("\\newline",fill=TRUE) 
   } 
 }
-
-# Missing rows
-if (exists("length_non_complete")){
-  cat("\n\n\\small Number of rows that are dropped because they contain no values (all values are missing):", length_non_complete)
-  cat("\\newline",fill=TRUE) 
-}
-
-
-# Char with just one unique value not considered
-if (exists("cols_one")){
-  if (sum(cols_one) != 0L){
-    cat("\n\n\\small Columns with just one unique value (missings omitted) which are not considered in further computations:") 
-    cols <- names(which(cols_one==1))
-    kable(cols, col.names = "Columns not considered")
-  }
-}
-
-# Char > 10 not considered
-if (exists("cols_catlarge")){
-  if (sum(cols_catlarge) != 0L){
-    cat("\n\n\\small Character columns with more than 10 unique values which are not considered in further computations:") 
-    cols <- names(which(cols_catlarge==1))
-    kable(cols, col.names = "Columns not considered")
-  }
-}
-
 
 # Missings more than 50%
 complete_rate <- sapply(df_work, function(col) 1-(sum(is.na(col)) / dim(df)[1])) 
@@ -205,29 +223,23 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 \pagebreak
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval}
-
-options(na.action=na.omit)
-
-if (exists("df_work")){
-  
-  if (nrow(df_work)>=5){
-    
-    cat("\n# Results", fill=TRUE)
-    
-    # Initialize
-    for (s in 1:16){
-          name2 <- paste("refs",s,sep="")
-          assign(name2,FALSE)
-    }
-
-   model <- gsub('\n','<br>',params$model) 
-   cat(model)
-        
-   cat(colnames(df_work))  
-          
-         
-}}
+cat("\n# Results", fill=TRUE)
+fit <- cfa(params$model, data=df_work, std.lv=TRUE, std.ov=TRUE, missing="fiml", estimator="ML", likelihood = "wishart") # to be like AMOS
 ```     
+
+```{r, results="asis", dev="cairo_pdf", eval=eval}
+info <- inspect(fit, what="list")
+info <- info[,c(2,3,4,5,8)]
+kable(info)
+```               
+  
+```{r, dev="cairo_pdf", eval=eval}
+summary(fit, standardized=TRUE, fit.measures=TRUE)
+```           
+
+```{r, results="asis", dev="cairo_pdf", eval=eval}
+semPaths(fit)
+```    
      
 ```{r, results="asis", eval=eval}
 

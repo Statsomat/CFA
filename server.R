@@ -162,12 +162,7 @@ shinyServer(function(input, output, session) {
     }
     
   })
-  
-  # Type model
-  output$model <- renderText({
-    text <- gsub('\n','<br>',input$text)
-  })
-  
+
 
   # This creates a short-term storage location for a filepath 
   report <- reactiveValues(filepath = NULL) 
