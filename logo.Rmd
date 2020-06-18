@@ -1,0 +1,14 @@
+---
+title: "Descriptive Statistics and Graphics"
+---
+
+\pagebreak
+
+```{r, fig.align='center'}
+knitr::include_graphics('Logo.jpg')
+```
+
+```{r, results="asis"}
+cat("\n\n\\center Thank you for using our automatic statistics services!")
+```
+

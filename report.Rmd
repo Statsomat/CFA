@@ -1,0 +1,38 @@
+---
+title: "Correlation and Association"
+author: "Statsomat.com"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 2
+bibliography: ["references.bib"]
+fontsize: 11pt
+params:
+  data: NA
+  filename: NA
+  fencoding: NA
+  decimal: NA
+  enc_guessed: NA
+  vars1: NA
+  model: NA
+header-includes:
+   - \usepackage{xcolor}
+   - \setmainfont[BoldFont=FiraSans-Bold, Extension=.otf]{FiraSans-Regular}
+   - \usepackage{booktabs}
+   - \usepackage{longtable}
+---
+
+
+**Warning: The automatic computation and interpretation delivered by the Statsomat should not completely replace the classical, made by humans graphical exploratory data analysis and statistical analysis. There may be data cases for which the Statsomat does not deliver the most optimal solution.**
+
+```{r child = 'report_kernel.Rmd'}
+```
+
+```{r, results="asis", eval=eval}
+cat("\n# References", fill=TRUE)
+```
+
+
+

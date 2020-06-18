@@ -1,0 +1,280 @@
+---
+title: "Correlation and Association"
+---
+
+
+```{r include=FALSE, results="asis"}
+echo_boot <- FALSE
+echo_pformat <- FALSE
+if (exists("df_num")){
+  if (ncol(df_num)>0L & nrow(df_num)>=5){
+    if (sum(rateunique_df) >= 2L){
+echo_boot <- (count_pearsoncorr>0)
+echo_pformat <- (count_pformat>0)
+}}}
+```
+
+```{whites, eval=FALSE, echo = echo_boot}
+# Function for the bootstrap confidence interval
+pearsoncorr <- function(data,i){
+  d <- data[i, ]
+  return(cor(d, use="complete.obs", method="pearson")[1,2])
+}
+```
+
+```{whites, eval=FALSE, echo = echo_pformat}
+# Function for the p-value format:
+pformat<-function(p){
+  if (p<0.001) return("<0.001") else return (round(p,3))
+}
+```
+
+```{r, results="asis"}
+
+options(na.action=na.omit)
+
+if (exists("df_num")){
+  
+  if (ncol(df_num)>0L & nrow(df_num)>=5){
+    
+    if (sum(rateunique_df) >= 2L){
+      
+      combs = combn(c(1:(ncol(df_num))),2)
+      
+      # Analysis for each pair 
+      for (i in 1:ncol(combs)){
+        
+        j = combs[1,i]
+        k = combs[2,i]
+        
+        # Define rate of unique values to control continuity 
+        rateunique1 <- length(unique(na.omit(df_num[,j]))) / length(na.omit(df_num[,j]))
+        rateunique2 <- length(unique(na.omit(df_num[,k]))) / length(na.omit(df_num[,k]))
+        
+        
+        # Consider bivariate continuous 
+        if (rateunique1 >= cutoffcont(length(na.omit(df_num[,j]))) & rateunique2 >= cutoffcont(length(na.omit(df_num[,k])))){
+          
+          a <- which(colnames(df2)==colnames(df_num)[j])
+          b <- which(colnames(df2)==colnames(df_num)[k])
+          
+          cat("`j = `",a)
+          cat("\\newline ")                                                                                                    
+          cat("`k =`",b)
+          cat("\\newline ")
+          cat("\\# `Columns:`")
+          cat("\\newline ")    
+          cat("`cat(colnames(df)[j],\"and\",colnames(df)[k],fill=TRUE)`")
+          cat("\\newline ")    
+          
+          tryCatch({
+            # Define check function for Pearson
+            check <- linearity(df_num[,j],df_num[,k])
+          }, error=function(e){cat("")})     
+          
+          
+          tryCatch({
+            # Define check function for Spearman & Kendall 
+            checkm <- linearity(rank(df_num[,j]),rank(df_num[,k]))
+          }, error=function(e){cat("")})    
+          
+          
+          tryCatch({
+            pcorrelation <- cor(df_num[,j],df_num[,k], use="complete.obs", method="pearson")
+          }, error=function(e){cat("")})    
+          
+          
+          
+          tryCatch({
+            spcorrelation <- cor(df_num[,j],df_num[,k], use="complete.obs", method="spearman")
+          }, error=function(e){cat("")})   
+          
+          
+          tryCatch({
+            ken <- cor(df_num[,j],df_num[,k], use="complete.obs", method="kendall")
+          }, error=function(e){cat("")}) 
+          
+          
+          tryCatch({  
+            if (check==TRUE & exists("pcorrelation")) {
+              cat("`pcorrelation <- cor(df[,j],df[,k], use=\"complete.obs\", method=\"pearson\")`")
+              cat("\\newline ") 
+              cat("`round(pcorrelation,4)` # `Pearson correlation coefficient`")
+              cat("\\newline ")
+              cat("\\newline ")
+            }
+          }, error=function(e){}) 
+          
+          
+          tryCatch({  
+            if (check==TRUE & normality(df_num[,j],df_num[,k])==TRUE) {
+              cat("`fisherci <- cor.test(df[,j],df[,k], method=\"pearson\")`")
+              cat("\\newline ")
+              cat("`c(round(fisherci$conf.int[1],4),round(fisherci$conf.int[2],4))` # `confidence interval`")
+              cat("\\newline ")
+              cat("`pformat(fisherci$p.value)` # `p-value`")
+              cat("\\newline ")
+              cat("\\newline ")
+                
+            }
+          }, error=function(e){cat("")}) 
+          
+          
+          tryCatch({  
+            if (check==TRUE & normality(df_num[,j],df_num[,k])==FALSE & nrow(df_num) < 800) {
+              temp <- data.frame(df_num[,j],df_num[,k])
+              bootdata <- boot(temp, statistic=pearsoncorr, R=1000)
+              if (length(unique(round(bootdata$t,2)))>1){
+                
+                cat("`temp <- data.frame(df[,j],df[,k])`")
+                cat("\\newline ")
+                cat("`bootdata <- boot(temp, statistic=pearsoncorr, R=1000)`")
+                cat("\\newline ")
+                cat("`bootresult <- boot.ci(bootdata, type=\"bca\")`")
+                cat("\\newline ")
+                cat("`c(round(bootresult$bca[4],4),round(bootresult$bca[5],4))` # `bootstrap conf. interval`")
+                cat("\\newline ")
+                cat("\\newline ")
+              
+                }}
+              
+          }, error=function(e){cat("")}) 
+          
+          
+          tryCatch({  
+            if ((check==TRUE & normality(df_num[,j],df_num[,k])==FALSE & exists("spearman")) || (check==FALSE & checkm==TRUE & exists("spearman")))   {
+              
+              cat("`spcorrelation <- cor(df[,j],df[,k], use=\"complete.obs\", method=\"spearman\")`")
+              cat("\\newline ") 
+              cat("`round(spcorrelation,4)` # `Spearman correlation coefficient`")
+              cat("\\newline ")
+              cat("\\newline ")
+            }
+          }, error=function(e){cat("")}) 
+          
+          
+          tryCatch({ 
+          if ((check==TRUE & normality(df_num[,j],df_num[,k])==FALSE & exists("spearman")) || (check==FALSE & checkm==TRUE & exists("spearman")))   {
+
+              spearmanci <- SpearmanRho(df_num[,j],df_num[,k], use="complete.obs", conf.level=0.95)
+              spearmanci2 <- cor.test(df_num[,j],df_num[,k], method="spearman", exact=TRUE)
+                 
+              cat("`spearmanci <- SpearmanRho(df[,j],df[,k], use=\"complete.obs\", conf.level=0.95)`")
+              cat("\\newline ") 
+              cat("`c(round(spearmanci[2],4),round(spearmanci[3],4))` # `confidence interval`")
+              cat("\\newline ") 
+
+              cat("`spearmanci2 <- suppressWarnings(cor.test(df[,j],df[,k], method=\"spearman\", exact=TRUE))`")
+              cat("\\newline ") 
+              cat("`pformat(spearmanci2$p.value)` # `p-value`")
+              cat("\\newline ") 
+              cat("\\newline ") 
+              
+            }
+          }, error=function(e){cat("")}) 
+          
+          
+           tryCatch({  
+           if ((check==TRUE & normality(df_num[,j],df_num[,k])==FALSE) || (check==FALSE & checkm==TRUE)) {
+             
+              cat("`ken <- cor(df[,j],df[,k], use=\"complete.obs\", method=\"kendall\")`")
+              cat("\\newline ") 
+              cat("`round(ken,4)` # `Kendall's tau correlation coefficient`")
+              cat("\\newline ")
+              cat("\\newline ")
+            }
+          }, error=function(e){cat("")}) 
+          
+          
+           tryCatch({ 
+            if ((check==TRUE & normality(df_num[,j],df_num[,k])==FALSE) || (check==FALSE & checkm==TRUE)) {
+              kentest <- cor.test(df_num[,j],df_num[,k], method="kendall")
+             
+               cat("`kentest <- cor.test(df[,j],df[,k], method=\"kendall\")`")
+              cat("\\newline ")
+              cat("`pformat(kentest$p.value)` # `p-value`")
+              cat("\\newline ")
+              cat("\\newline ")
+              }
+            }, error=function(e){cat("")}) 
+          
+          
+           tryCatch({ 
+            
+            if (check==FALSE & checkm==FALSE){
+             
+              tryCatch({ 
+                
+                if (nrow(df_num) <= 100){
+                  mic <- testforDEP(df_num[,j],df_num[,k], test="MIC", rm.na=TRUE, p.opt="MC")
+                } else {mic <- testforDEP(df_num[,j],df_num[,k], test="MIC", rm.na=TRUE, p.opt="table")}
+  
+                cat("`if (nrow(df) <= 100){`")
+                cat("\\newline ")
+                cat("`mic <- testforDEP(df[,j],df[,k], test=\"MIC\", rm.na=TRUE, p.opt=\"MC\")`")
+                cat("\\newline ")
+                cat("`} else {mic <- testforDEP(df[,j],df[,k], test=\"MIC\", rm.na=TRUE, p.opt=\"table\")}`")
+                cat("\\newline ")
+                cat("`micval <- minerva::mine(df[,j],df[,k], na.rm=TRUE)$MIC`")
+                cat("\\newline ")
+                cat("`round(micval,3)`     # `Maximal Information Coefficient (MIC)`")
+                cat("\\newline ")
+                cat("`pformat(mic@p_value)` # `p-value MIC`")
+                cat("\\newline ")
+                cat("\\newline ")
+              
+              }, error=function(e){cat("")}
+              ) 
+              
+              tryCatch({ 
+                
+                 temp <- data.frame(df_num[,j],df_num[,k])
+                 temp2 <- temp[complete.cases(temp),]
+                 dist <- dcor.test(temp2[,1],temp2[,2], R=100)
+                 
+                 cat("`temp <- data.frame(df[,j],df[,k])`")
+                 cat("\\newline ")
+                 cat("`temp2 <- temp[complete.cases(temp),]`")
+                 cat("\\newline ")
+                 cat("`dist <- dcor.test(temp2[,1],temp2[,2], R=100)`")
+                 cat("\\newline ")
+                 cat("`round(dist$statistic,3)`  # `Distance correlation coefficient`")
+                 cat("\\newline ")
+                 cat("`pformat(dist$p.value)` # `p-value`")
+                 cat("\\newline ")
+                 cat("\\newline ")
+               
+              }, error=function(e){cat("")}) 
+              
+            }
+
+          }, error=function(e){cat("")}) 
+          
+          
+
+            cat("`scatterplotMatrix(~df[,j]+df[,k], smooth=FALSE, var.labels=colnames(df)[c(j,k)],`")
+            cat("\\newline ")
+            cat("`main=\"Enhanced Scatterplots\", col = \"`#`2fa42d\")`")
+            cat("\\newline ")
+            cat("\\newline ")
+           
+          
+}}}}}
+
+```
+
+```{r, results="asis", eval=eval_code}
+cat("\\newpage ")
+cat("\n# R Code License", fill=TRUE)
+cat("In the report included R programming code, the \"Software\" is under the MIT license.")
+cat("\\newline ")
+cat("Copyright 2020 Statsomat.com")
+cat("\\newline ")
+cat("Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:")
+cat("\\newline ")
+cat("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.")
+```
+
+```{r, results="asis", eval=eval_code}
+cat("\n# References", fill=TRUE)
+```

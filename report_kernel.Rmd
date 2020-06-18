@@ -1,0 +1,249 @@
+---
+title: "Correlation and Association"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE, warning=FALSE, fig.width=8)
+```
+
+
+```{r}
+# Get data
+df <- params$data
+df2 <- df
+df <- df[,params$vars1,drop=FALSE]
+```
+
+```{r}
+# Call used libraries 
+library(knitr) # kable
+library(fastDummies) # make dummies
+
+eval <- FALSE
+tryCatch({
+
+# Drop columns if all observations are missing 
+col_names_missing <- sapply(df, function(col) all(is.na(col)))
+df[ ,col_names_missing] <- list(NULL)
+df_list <- df 
+
+# Drop empty rows
+rowsums <- data.frame(sapply(df,is.na))
+if (length(which(rowSums(rowsums) == dim(df)[2])) != 0L){
+  rows_drop <- (which(rowSums(rowsums) == dim(df)[2]))
+  length_non_complete <- length(which(rowSums(rowsums) == dim(df)[2]))
+  df <- df[-rows_drop, ,drop=FALSE]
+}
+
+# Drop columns with one unique value (NAs not considered)
+cols_one <- sapply(df, function(col) length(unique(na.omit(col))) == 1)
+df[,cols_one] <- list(NULL)
+
+# Drop character variables with more than 10 categories, NAs included 
+cols_catlarge <- sapply(df, function(col) is.character(col) & length(unique(col)) >10)
+df[,cols_catlarge] <- list(NULL)
+
+# Convert logical variables to character
+cols_logical <- sapply(df, function(col) is.logical(col))
+df[ ,cols_logical] <- sapply(df[ ,cols_logical], as.character)
+
+# Extract continuous and ordinal variables 
+df_num <- df[which(sapply(df, is.numeric) == 1L)]
+rateunique_df <- sapply(df_num, function(col) (length(unique(na.omit(col))) / length(na.omit(col))) >= cutoffcont(length(na.omit(col))))
+cols_continuous <- names(which(rateunique_df == TRUE))
+cols_ordinal <- names(which(rateunique_df == FALSE))
+
+# Extract binary character variables 
+cols_binary <- sapply(df, function(col) is.character(col) & length(unique(na.omit(col))) == 2)
+df_binary <- df[,cols_binary,drop=FALSE]
+
+# Make dummy variables for the character variables with more than 2 levels 
+cols_dummy <- sapply(df, function(col) is.character(col) & length(unique(na.omit(col))) > 2)
+df_dummy <-  df[,cols_dummy,drop=FALSE]
+if (ncol(df_dummy)>0) {
+  dummies <- fastDummies::dummy_cols(df_dummy,remove_first_dummy = TRUE)
+  df_binary <- merge(df_binary,dummies,by=0)
+} 
+
+# Put together 
+df_work <- merge(df_num,df_binary)
+
+# Initialize next computations
+eval <- TRUE
+
+}, error=function(e) {
+  
+  stop(safeError("Outputs cannot be generated. Please check your data for consistency."))
+ 
+  
+}
+
+)
+
+```
+
+
+```{r, results="asis", eval=eval}
+# Chunk with first page of basic information
+
+cat("\n# Basic Information", fill=TRUE)
+cat("Automatic statistics for the file:", fill=TRUE)
+dataname <- params$filename[1]
+kable(dataname, col.names = "File")
+
+cat("Your selection for the encoding:", fill=TRUE)
+if (params$fencoding=="unknown"){
+  cat("Auto")
+} else {cat("UTF-8")}
+cat("\\newline",fill=TRUE) 
+
+cat("Your selection for the decimal character:", fill=TRUE)
+if (params$decimal=="auto"){
+  cat("Auto")
+} else {cat(params$decimal)}
+cat("\\newline",fill=TRUE) 
+  
+cat("Observations (rows with at least one non-missing value): ", fill=TRUE)
+cat(dim(df)[1])
+cat("\\newline",fill=TRUE) 
+
+cat("Variables (columns with at least one non-missing value): ", fill=TRUE)
+cat(dim(df_list)[2])
+cat("\\newline",fill=TRUE) 
+
+cat("Variables considered continuous: ", fill=TRUE)
+if (exists("df_num")){
+  if (ncol(df_num)>0){
+    if (sum(rateunique_df )>0){
+      kable(cols_continuous, col.names = "Variables considered continuous")
+    }
+  } else {
+    
+    cat("0",fill=TRUE)
+    cat("\\newline",fill=TRUE) }
+}
+
+
+cat("Variables considered ordinal: ", fill=TRUE)
+if (exists("df_num")){
+  if (ncol(df_num)>0){
+    if (sum(rateunique_df==FALSE)>0){
+      kable(cols_ordinal, col.names = "Variables considered ordinal")
+    }
+  } else {
+    
+    cat("0",fill=TRUE)
+    cat("\\newline",fill=TRUE) }
+}
+
+
+cat("Variables considered binary: ", fill=TRUE)
+if (exists("df_binary")){
+  if (ncol(df_binary)>0){
+      kable(colnames(df_binary), col.names = "Variables considered binary")
+  } else {
+    cat("0",fill=TRUE)
+    cat("\\newline",fill=TRUE) }
+}
+
+
+# Missing columns
+if (exists("col_names_missing")){
+  if (sum(col_names_missing) != 0L){
+    cat("\n\n\\small Number of columns that are dropped because they contain no values (all values are missing):", sum(col_names_missing))
+    cat("\\newline",fill=TRUE) 
+  } 
+}
+
+# Missing rows
+if (exists("length_non_complete")){
+  cat("\n\n\\small Number of rows that are dropped because they contain no values (all values are missing):", length_non_complete)
+  cat("\\newline",fill=TRUE) 
+}
+
+
+# Char with just one unique value not considered
+if (exists("cols_one")){
+  if (sum(cols_one) != 0L){
+    cat("\n\n\\small Columns with just one unique value (missings omitted) which are not considered in further computations:") 
+    cols <- names(which(cols_one==1))
+    kable(cols, col.names = "Columns not considered")
+  }
+}
+
+# Char > 10 not considered
+if (exists("cols_catlarge")){
+  if (sum(cols_catlarge) != 0L){
+    cat("\n\n\\small Character columns with more than 10 unique values which are not considered in further computations:") 
+    cols <- names(which(cols_catlarge==1))
+    kable(cols, col.names = "Columns not considered")
+  }
+}
+
+
+# Missings more than 50%
+complete_rate <- sapply(df_work, function(col) 1-(sum(is.na(col)) / dim(df)[1])) 
+if (length(which(complete_rate < 0.5)) != 0L){
+  cat("**Warning: These variables have more than 50% missing values:**")
+  miss_var <- names(which(complete_rate < 0.5)) 
+  kable(miss_var, col.names = "Variable")
+}
+
+
+# Numeric falsly to char? 
+check_reading <- function(col){
+  numeric <- !is.na(as.numeric(col))
+  return(sum(numeric)/sum(!is.na(col)))
+}
+numeric_percent <- sapply(df_dummy, function(col) check_reading(col))
+
+if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
+  cat("**Warning: More than 90% of the values of these columns could be treated as numeric. Nevertheless, because of some values or the selected decimal character, the columns must be treated as discrete. Are all the values plausible? Please check your data once more before uploading! Column(s):**", names(numeric_percent[(numeric_percent>0.9)]),fill=TRUE)
+}
+```
+
+\pagebreak
+
+```{r, results="asis", dev="cairo_pdf", eval=eval}
+
+options(na.action=na.omit)
+
+if (exists("df_work")){
+  
+  if (nrow(df_work)>=5){
+    
+    cat("\n# Results", fill=TRUE)
+    
+    # Initialize
+    for (s in 1:16){
+          name2 <- paste("refs",s,sep="")
+          assign(name2,FALSE)
+    }
+
+   model <- gsub('\n','<br>',params$model) 
+   cat(model)
+        
+   cat(colnames(df_work))  
+          
+         
+}}
+```     
+     
+```{r, results="asis", eval=eval}
+
+tryCatch({
+
+# Title 
+cat("\n# R Statistical Methods", fill=TRUE)
+cat("The statistical analysis was done using R [@stats]. ", fill=TRUE)
+cat("\\newline",fill=TRUE)    
+    
+    
+}, error=function(e) {cat("")}
+
+)
+
+```
+
+
+
