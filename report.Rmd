@@ -30,7 +30,7 @@ header-includes:
 ```{r child = 'report_kernel.Rmd'}
 ```
 
-```{r, results="asis", eval=eval}
+```{r, results="asis", eval=eval2}
 cat("\n# References", fill=TRUE)
 ```
 

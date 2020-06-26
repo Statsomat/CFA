@@ -20,6 +20,7 @@ library(knitr) # kable
 library(fastDummies) # make dummies
 library(lavaan)
 library(semPlot)
+library(corrplot)
 
 eval <- FALSE
 tryCatch({
@@ -57,6 +58,7 @@ cols_ordinal <- names(which(rateunique_df == FALSE))
 
 # Extract binary character variables 
 cols_binary <- sapply(df, function(col) is.character(col) & length(unique(na.omit(col))) == 2)
+cols_binary_names <- names(which(cols_binary == TRUE))
 df_binary <- df[,cols_binary,drop=FALSE]
 
 # Make dummy variables for the character variables with more than 2 levels 
@@ -135,12 +137,12 @@ if (exists("df_num")){
 }
 
 
-cat("Variables considered ordinal: ", fill=TRUE)
+cat("Numerical variables considered binary or ordinal: ", fill=TRUE)
 if (exists("df_num")){
   if (ncol(df_num)>0){
     if (sum(rateunique_df==FALSE)>0){
       cat(sum(rateunique_df==FALSE),fill=TRUE)
-      kable(cols_ordinal, col.names = "Variables considered ordinal")
+      kable(cols_ordinal, col.names = "Numerical variables considered binary or ordinal")
     } else {
     
     cat("0",fill=TRUE)
@@ -148,18 +150,18 @@ if (exists("df_num")){
 }}
 
 
-cat("Variables considered binary: ", fill=TRUE)
+cat("Character variables considered binary: ", fill=TRUE)
 if (exists("cols_binary")){
   if (sum(cols_binary)>0){
     cat(sum(cols_binary),fill=TRUE)
-    kable(names(which(cols_binary==TRUE)), col.names = "Variables considered binary")
+    kable(names(which(cols_binary==TRUE)), col.names = "Character variables considered binary")
   } else {
     cat("0",fill=TRUE)
     cat("\\newline",fill=TRUE) }
 }
 
 
-cat("Variables considered norminal and transformed to binary: ", fill=TRUE)
+cat("Character variables considered norminal and transformed to binary: ", fill=TRUE)
 if (exists("cols_dummy")){
   if (sum(cols_dummy)>0){
     cat(sum(cols_dummy),fill=TRUE)
@@ -223,25 +225,181 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 \pagebreak
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval}
-cat("\n# Results", fill=TRUE)
-fit <- cfa(params$model, data=df_work, std.lv=TRUE, std.ov=TRUE, missing="fiml", estimator="ML", likelihood = "wishart") # to be like AMOS
+
+# Initialize next computations
+eval2 <- FALSE
+
+tryCatch({
+  
+  fit <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", likelihood = "wishart") # to be like AMOS
+  eval2 <- TRUE
+
+}, error=function(e) {
+  
+  stop(safeError("Errors in the cfa execution. Please reconsider your data or your model."))
+  
+}
+
+)
 ```     
 
-```{r, results="asis", dev="cairo_pdf", eval=eval}
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("\n# Model Syntax", fill=TRUE)
 info <- inspect(fit, what="list")
 info <- info[,c(2,3,4,5,8)]
-kable(info)
+cat("The following table describes the applied model equations in lavaan model syntax, either as entered by you in the text area (denoted by User=1) or established internally (User=0). The last column numbers the free parameters which are estimated.")
+kable(info, col.names=c("Left hand side","Operator","Right hand side","User","Free parameter"))
 ```               
-  
-```{r, dev="cairo_pdf", eval=eval}
-summary(fit, standardized=TRUE, fit.measures=TRUE)
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("\n# Assumptions", fill=TRUE)
+cat("bla", fill=TRUE)
 ```           
 
-```{r, results="asis", dev="cairo_pdf", eval=eval}
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("\n# Model Settings", fill=TRUE)
+cat("bla", fill=TRUE)
+```
+
+```{r, dev="cairo_pdf", eval=eval2}
+
+eval3<- FALSE
+tryCatch({
+
+  cat("# Lavaan Outputs", fill=TRUE)
+  cat("## Model Summary", fill=TRUE)
+  
+  summary(fit, standardized=TRUE, fit.measures=TRUE)
+  eval3 <- TRUE
+
+}, error=function(e) {
+  
+  stop(safeError("Something went wrong while computing the summary statistics of the CFA. Please reconsider your data or your model."))
+  
+}
+
+)
+
+```
+
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+
+# Initiate indices
+dfindic <- FALSE
+chi1 <- FALSE
+chi2 <- FALSE
+cfi <- FALSE
+tli <- FALSE
+
+# Number of used variables
+vars <- fit@pta$nvar[[1]]
+
+cat("\n# Interpretation", fill=TRUE)
+cat("\n## Overall Goodness of Fit", fill=TRUE)
+
+# Chi2
+cat("We consider fit indices from the Model Summary to check the overall goodness of fit. ", fill=TRUE)
+cat("\\newline",fill=TRUE) 
+cat("\\newline",fill=TRUE) 
+cat("**Model Test User Model**", fill=TRUE)
+cat("\\newline",fill=TRUE) 
+
+if (fit@Fit@test$standard$df>0){
+  cat("The degrees of freedom (df) are", fit@Fit@test$standard$df, "and positive, indicating an over-identified model, fact which basically enables further analysis and interpretation. ")
+  dfindic <- TRUE
+} else if (fit@Fit@test$standard$df==0){
+   cat("The degrees of freedom (df) are", fit@Fit@test$standard$df, ", indicating a just-identified or saturated model. ")
+} else {
+  cat("The degrees of freedom (df)", fit@Fit@test$standard$df, "are negative, indicating an under-identified model, fact which basically disables further analysis and interpretation. ")
+}
+
+cat("Comment: The df are calculated as the number of known parameters minus the number of free parameters: ",(vars*(vars+1))/2+vars,"-",fit@Fit@npar,"=",fit@Fit@test$standard$df,". ")
+
+eval3 <- eval2*dfindic
+    
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+
+cat("The test statistic with the value ",round(fit@Fit@test$standard$stat,3),"is the chi-square test statistic representing the difference between summaries of the model-implied covariance matrix and the observed covariance matrix. It is a so called *absolute fit index*, evaluating the reasonability of the model without taking into account other possible solutions. ")
+
+cat("The p-value of the test of a zero difference is ", pformat(fit@Fit@test$standard$pvalue))
+
+if  (fit@Fit@test$standard$pvalue > 0.05){
+  cat(". Therefore, the chi-square test of model fit is not statistically significant at 5% type I error suggesting an acceptable model fit. ")
+  chi1 <- TRUE
+} else {
+  cat(". Therefore, the chi-square test of model fit is statistically significant at 5% type I error suggesting a non-acceptable model fit. ") 
+}
+
+cat("Nevertheless, this chi-square model fit index should not be used as a sole index of model fit since it greatly depends on the sample size and other model issues. Directly related is the chi-square to the degrees of freedom ratio: ", fit@Fit@test$standard$stat,"/",fit@Fit@test$standard$df,"=",round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3))
+  
+if  (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3) < 3){
+  cat(". This ratio is smaller than 3 (the cutoff used by Statsomat), suggesting an acceptable model fit. ")
+  chi2 <- TRUE 
+} else {
+  cat(". This ratio is greater or equal than 3 (the cutoff used by Statsomat), suggesting a questionable or non-acceptable model fit. ") 
+}
+
+cat("Please consider that there is no universal agreed standard for the cutoff of this ratio. Other cutoff values may lead to other interpretations. ", fill=TRUE)
+cat("\\newline",fill=TRUE) 
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("**Model Test Baseline Model**", fill=TRUE)
+cat("\\newline",fill=TRUE)
+cat(" The test statistic with the value ",round(fit@baseline$test$standard$stat,3), " represents the difference between summaries of another model-implied covariance matrix with zero covariances (a baseline model assuming independent variables, i.e. a worst fitting model) and the observed covariance matrix. It is used only indirectly in a model fit index and not further commented here. ", fill=TRUE)
+cat("\\newline",fill=TRUE) 
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("**User Model versus Baseline Model**", fill=TRUE)
+cat("\\newline",fill=TRUE)
+cat(" The Comparative Fit Index (CFI),  evaluates the fit of the your model in relation to the worst-fitting baseline model (which assumes independent variables). ", fill=TRUE)
+
+if (round(fitMeasures(fit)["cfi"],3)>0.9){
+  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],3),"is greater than 0.90, suggesting an acceptable model. ")
+  cfi <- TRUE
+} else {
+  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],3),"is smaller or equal than 0.90, suggesting a non-acceptable model. ")
+}
+
+```
+
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("Notes: In our interpretation, we will use the term *variables* instead of *indicators* or *items*. ")
+```
+
+```{r, dev="cairo_pdf", eval=eval2}
+# On the covariance matrix
+inspect(fit, what="cov.ov") # Fitted cov
+inspect(fit, "sampstat")$cov  # Observed cov 
+resid(fit, "raw")$cov # Residuals on cov
+
+# On the correlation matrix
+inspect(fit, what="cor.ov") # Fitted corr
+lavCor(fit) # Observed cor
+r <- resid(fit, "cor")$cov # Residuals on cor
+r
+corrplot::corrplot(r, is.corr = FALSE,
+               type = 'lower',
+               order = "original",
+               tl.col='black', tl.cex=.75)
+```  
+
+```{r, dev="cairo_pdf", eval=eval2}
+cat("\n## Parameter Estimates", fill=TRUE)
+standardizedSolution(fit, type="std.all")
+```  
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("\n## Path Diagram", fill=TRUE)
 semPaths(fit)
 ```    
      
-```{r, results="asis", eval=eval}
+```{r, results="asis", eval=eval2}
 
 tryCatch({
 
