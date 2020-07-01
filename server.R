@@ -6,7 +6,7 @@ library(rmarkdown)
 library(data.table)
 library(readr)
 
-source("Functions.R")
+source("helpers/Functions.R")
 
 # Define server logic 
 shinyServer(function(input, output, session) {

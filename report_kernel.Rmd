@@ -231,7 +231,8 @@ eval2 <- FALSE
 
 tryCatch({
   
-  fit <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", likelihood = "wishart") # to be like AMOS
+  fit <- cfa(params$model, data=df_work, missing="fiml", estimator="ML") 
+  pe <- parameterEstimates(fit, standardized=TRUE)
   eval2 <- TRUE
 
 }, error=function(e) {
@@ -261,20 +262,22 @@ cat("\n# Model Settings", fill=TRUE)
 cat("bla", fill=TRUE)
 ```
 
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("\n# Lavaan Outputs", fill=TRUE)
+cat("\n## Model Summary", fill=TRUE)
+```
+
 ```{r, dev="cairo_pdf", eval=eval2}
 
 eval3<- FALSE
 tryCatch({
-
-  cat("# Lavaan Outputs", fill=TRUE)
-  cat("## Model Summary", fill=TRUE)
   
   summary(fit, standardized=TRUE, fit.measures=TRUE)
   eval3 <- TRUE
-
+  
 }, error=function(e) {
   
-  stop(safeError("Something went wrong while computing the summary statistics of the CFA. Please reconsider your data or your model."))
+  stop(safeError("The summary statistics of the CFA cannot be computed error-free. Please reconsider your data or your model."))
   
 }
 
@@ -284,26 +287,23 @@ tryCatch({
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-
-# Initiate indices
-dfindic <- FALSE
-chi1 <- FALSE
-chi2 <- FALSE
-cfi <- FALSE
-tli <- FALSE
-
-# Number of used variables
-vars <- fit@pta$nvar[[1]]
-
 cat("\n# Interpretation", fill=TRUE)
 cat("\n## Overall Goodness of Fit", fill=TRUE)
 
-# Chi2
-cat("We consider fit indices from the Model Summary to check the overall goodness of fit. ", fill=TRUE)
-cat("\\newline",fill=TRUE) 
-cat("\\newline",fill=TRUE) 
+cat("We consider fit indices from the Model Summary to check the overall goodness of fit. Values from the Model Summary are rounded where appropiately. ", fill=TRUE)
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("**Model Test User Model**", fill=TRUE)
 cat("\\newline",fill=TRUE) 
+
+# Saturated vs non-saturated model 
+
+# Number of in the model used indicator variables
+vars <- fit@pta$nvar[[1]]
+
+# Number of knowns
+knowns <- (vars*(vars+1))/2+vars # If FIML used 
 
 if (fit@Fit@test$standard$df>0){
   cat("The degrees of freedom (df) are", fit@Fit@test$standard$df, "and positive, indicating an over-identified model, fact which basically enables further analysis and interpretation. ")
@@ -314,59 +314,134 @@ if (fit@Fit@test$standard$df>0){
   cat("The degrees of freedom (df)", fit@Fit@test$standard$df, "are negative, indicating an under-identified model, fact which basically disables further analysis and interpretation. ")
 }
 
-cat("Comment: The df are calculated as the number of known parameters minus the number of free parameters: ",(vars*(vars+1))/2+vars,"-",fit@Fit@npar,"=",fit@Fit@test$standard$df,". ")
+cat("Comment: The df are calculated as the number of known parameters minus the number of free parameters: ",knowns,"-",fit@Fit@npar,"=",fit@Fit@test$standard$df,". ")
 
-eval3 <- eval2*dfindic
+eval3 <- (eval2 && dfindic)
     
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
+########
+### Chi2
+########
 
-cat("The test statistic with the value ",round(fit@Fit@test$standard$stat,3),"is the chi-square test statistic representing the difference between summaries of the model-implied covariance matrix and the observed covariance matrix. It is a so called *absolute fit index*, evaluating the reasonability of the model without taking into account other possible solutions. ")
+cat("The test statistic with the value ",round(fit@Fit@test$standard$stat,3),"is the chi-square model fit index, representing the difference between summaries of the model-implied covariance matrix and the observed covariance matrix. It is a so called absolute fit index, evaluating the reasonability of the model at an absolute level (e.g. Brown). ")
 
 cat("The p-value of the test of a zero difference is ", pformat(fit@Fit@test$standard$pvalue))
 
-if  (fit@Fit@test$standard$pvalue > 0.05){
-  cat(". Therefore, the chi-square test of model fit is not statistically significant at 5% type I error suggesting an acceptable model fit. ")
-  chi1 <- TRUE
+stdload <- pe[which(pe$op=="=~"),"std.all"]
+nfac <- fit@pta$nfac[[1]]
+
+if (fit@Fit@test$standard$pvalue > 0.05){
+  cat(". Therefore, the chi-square test of model fit is not statistically significant at 5% type I error, suggesting an acceptable model fit.  ")
 } else {
-  cat(". Therefore, the chi-square test of model fit is statistically significant at 5% type I error suggesting a non-acceptable model fit. ") 
+  cat(". Therefore, the chi-square test of model fit is statistically significant at 5% type I error, suggesting a non-acceptable model fit. ") 
 }
 
-cat("Nevertheless, this chi-square model fit index should not be used as a sole index of model fit since it greatly depends on the sample size and other model issues. Directly related is the chi-square to the degrees of freedom ratio: ", fit@Fit@test$standard$stat,"/",fit@Fit@test$standard$df,"=",round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3))
+cat("Considering also other relevant characteristics of the data resp. the model (sample size, number of factors, estimated loadings), ")
+
+if (weightchi2(nrow(df_work),nfac,max(stdload)) %in% c(0.5,1)){
+  cat("we assume a reliable chi-square model fit index and include this result in the overall evaluation of the goodness-of-fit.  ")
+  } else {
+  cat("we do not assume a reliable chi-square model fit index and therefore do not include this result in the overall evaluation of the goodness-of-fit.  ")
+}
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+#########
+# Chitodf
+#########
+
+cat("Directly related is the chi-square to the degrees of freedom ratio: ", fit@Fit@test$standard$stat,"/",fit@Fit@test$standard$df,"=",round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3))
   
-if  (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3) < 3){
-  cat(". This ratio is smaller than 3 (the cutoff used by Statsomat), suggesting an acceptable model fit. ")
-  chi2 <- TRUE 
+if  (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3) < 2){
+  cat(". This ratio is smaller than 2 (the cutoff used by Statsomat), suggesting an acceptable model fit. ")
+  chi2todf <- TRUE 
 } else {
-  cat(". This ratio is greater or equal than 3 (the cutoff used by Statsomat), suggesting a questionable or non-acceptable model fit. ") 
+  cat(". This ratio is greater or equal than 2 (the cutoff used by Statsomat), suggesting a questionable or non-acceptable model fit. ") 
 }
-
-cat("Please consider that there is no universal agreed standard for the cutoff of this ratio. Other cutoff values may lead to other interpretations. ", fill=TRUE)
-cat("\\newline",fill=TRUE) 
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("**Model Test Baseline Model**", fill=TRUE)
 cat("\\newline",fill=TRUE)
 cat(" The test statistic with the value ",round(fit@baseline$test$standard$stat,3), " represents the difference between summaries of another model-implied covariance matrix with zero covariances (a baseline model assuming independent variables, i.e. a worst fitting model) and the observed covariance matrix. It is used only indirectly in a model fit index and not further commented here. ", fill=TRUE)
-cat("\\newline",fill=TRUE) 
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("**User Model versus Baseline Model**", fill=TRUE)
 cat("\\newline",fill=TRUE)
-cat(" The Comparative Fit Index (CFI),  evaluates the fit of the your model in relation to the worst-fitting baseline model (which assumes independent variables). ", fill=TRUE)
+cat(" The Comparative Fit Index (CFI),  evaluates the fit of the your model in relation to the worst-fitting baseline model (which assumes independent variables) and ranges between zero and one. ", fill=TRUE)
 
-if (round(fitMeasures(fit)["cfi"],3)>0.9){
-  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],3),"is greater than 0.90, suggesting an acceptable model. ")
-  cfi <- TRUE
+if (round(fitMeasures(fit)["cfi"],2)>=0.9){
+  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],2),"is greater or equal than 0.90, suggesting an acceptable model fit. ")
+  cfi <- 0.5
+} else if (round(fitMeasures(fit)["cfi"],2)>=0.95) {
+  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],2),"is greater or equal than 0.95, suggesting a good model fit. ")
+    cfi <- 1
 } else {
-  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],3),"is smaller or equal than 0.90, suggesting a non-acceptable model. ")
+  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],2),"is smaller or equal than 0.90, suggesting a non-acceptable model fit. ")
+}
+
+cat("\\newline",fill=TRUE)
+cat("The Tucker-Lewis Index (TLI), evaluates the fit of the your model in relation to the worst-fitting baseline model (which assumes independent variables). Overly complex models are penalized. Values can by any real numbers. ", fill=TRUE)
+
+if (round(fitMeasures(fit)["tli"],2)>=0.9){
+  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],2),"is greater or equal than 0.90, suggesting an acceptable model fit. ")
+  tli <- 0.5
+} else if (round(fitMeasures(fit)["tli"],2)>=0.95) {
+  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],2),"is greater or equal than 0.95, suggesting a good model fit. ")
+  tli <- 1
+} else {
+  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],2),"is smaller or equal than 0.90, suggesting a non-acceptable model fit. ")
 }
 
 ```
 
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("**Root Mean Square Error of Approximation:**", fill=TRUE)
+cat("\\newline",fill=TRUE)
+cat("The Root Mean Square Error of Approximation (RMSEA) is a parsimony correction fit index based on the chi-square absolute model fit index. Overly complex models are penalized. Values can be greater of equal than zero, with values close to zero suggesting an acceptable model fit. ", fill=TRUE)
+
+if (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.06){
+  cat("The upper limit of the confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is smaller than 0.06, suggesting an acceptable model fit. ")
+  rmsea <- TRUE
+} else {
+    cat("The upper limit of the confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is greater or equal than 0.06, suggesting a non-acceptable model fit. ")
+}
+
+cat("\\newline",fill=TRUE)
+
+if (fitMeasures(fit)["rmsea.pvalue"]>0.05){
+  cat("The p-value of close fit ",pformat(fitMeasures(fit)["rmsea.pvalue"]),"suggests that the RMSEA is not statistically significant larger than 0.05, suggesting an acceptable model fit. ")
+  rmseap <- TRUE
+} else {
+  cat("The p-value of close fit ",pformat(fitMeasures(fit)["rmsea.pvalue"]),"suggests that the RMSEA is statistically significant larger than 0.05, suggesting a non-acceptable model fit. ")
+}
+
+```
+
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("**Standardized Root Mean Square Residual:**", fill=TRUE)
+cat("\\newline",fill=TRUE)
+cat("The Standardized Root Mean Square Residual (SRMR) is an absolute model fit index derived from the residual correlation matrix with a range between zero and one with values close to zero suggesting an acceptable model fit. ", fill=TRUE)
+
+cat("\\newline",fill=TRUE)
+
+if (round(fitMeasures(fit)["srmr"],2)<0.08){
+   cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],3),"is smaller than 0.08, suggesting an acceptable model. ")
+   srmr <- TRUE
+} else {
+   cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],2),"is greater or equal than 0.08, suggesting a non-acceptable model. ")
+}
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+chi2 <- weightchi2(nrow(df_work),nfac,max(stdload))
+gof <- c(chi2)
+print(gof)
+```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("Notes: In our interpretation, we will use the term *variables* instead of *indicators* or *items*. ")
