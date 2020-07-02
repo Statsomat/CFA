@@ -162,8 +162,10 @@ f3 =~ x7 + x8 + x9
                                     padding-top: 3px;
                                     color:#ff9900; 
                                     background-color: #ff9900; 
-                                    border-color: #ff9900;
-                                    background-image: url('Button.gif');")
+                                    background-image: url('Button.gif');
+                                    border: none;
+                                    outline: none;
+                                   ")
                      
                      
            )

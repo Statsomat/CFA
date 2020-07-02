@@ -233,6 +233,8 @@ tryCatch({
   
   fit <- cfa(params$model, data=df_work, missing="fiml", estimator="ML") 
   pe <- parameterEstimates(fit, standardized=TRUE)
+  stdload <- pe[which(pe$op=="=~"),"std.all"]
+  nfac <- fit@pta$nfac[[1]]
   eval2 <- TRUE
 
 }, error=function(e) {
@@ -329,22 +331,30 @@ cat("The test statistic with the value ",round(fit@Fit@test$standard$stat,3),"is
 
 cat("The p-value of the test of a zero difference is ", pformat(fit@Fit@test$standard$pvalue))
 
-stdload <- pe[which(pe$op=="=~"),"std.all"]
-nfac <- fit@pta$nfac[[1]]
-
 if (fit@Fit@test$standard$pvalue > 0.05){
-  cat(". Therefore, the chi-square test of model fit is not statistically significant at 5% type I error, suggesting an acceptable model fit.  ")
-} else {
-  cat(". Therefore, the chi-square test of model fit is statistically significant at 5% type I error, suggesting a non-acceptable model fit. ") 
-}
-
-cat("Considering also other relevant characteristics of the data resp. the model (sample size, number of factors, estimated loadings), ")
-
-if (weightchi2(nrow(df_work),nfac,max(stdload)) %in% c(0.5,1)){
-  cat("we assume a reliable chi-square model fit index and include this result in the overall evaluation of the goodness-of-fit.  ")
+  cat(". Therefore, the chi-square test of model fit is not statistically significant at 5% type I error")
+ 
+  if (weightchi2(nrow(df_work),nfac,max(stdload)) %in% c(0.5,1)){
+    cat(", suggesting an acceptable model fit. Considering also other relevant characteristics of the data resp. the model (sample size, number of factors, estimated loadings), we assume a reliable chi-square model fit index and include this result in the overall evaluation of the goodness-of-fit.  ")
   } else {
-  cat("we do not assume a reliable chi-square model fit index and therefore do not include this result in the overall evaluation of the goodness-of-fit.  ")
+  cat(". But considering also other relevant characteristics of the data resp. the model (sample size, number of factors, estimated loadings), we do not assume a reliable chi-square model fit index and do not further interpret this result. ")
 }
+  
+} else {
+  cat(". Therefore, the chi-square test of model fit is statistically significant at 5% type I error") 
+  
+  if (weightchi2(nrow(df_work),nfac,max(stdload)) %in% c(0.5,1)){
+    cat(", suggesting a non-acceptable model fit. Considering also other relevant characteristics of the data resp. the model (sample size, number of factors, estimated loadings), we assume a reliable chi-square model fit index and include this result in the overall evaluation of the goodness-of-fit.  ")
+  } else {
+  cat(". But considering also other relevant characteristics of the data resp. the model (sample size, number of factors, estimated loadings), we do not assume a reliable chi-square model fit index and do not further interpret this result. ")
+}
+  
+}
+
+
+chi2 <- (fit@Fit@test$standard$pvalue > 0.05)
+chi2_weight<- weightchi2(nrow(df_work),nfac,max(stdload))
+
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
@@ -352,14 +362,20 @@ if (weightchi2(nrow(df_work),nfac,max(stdload)) %in% c(0.5,1)){
 # Chitodf
 #########
 
-cat("Directly related is the chi-square to the degrees of freedom ratio: ", fit@Fit@test$standard$stat,"/",fit@Fit@test$standard$df,"=",round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3))
-  
-if  (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3) < 2){
-  cat(". This ratio is smaller than 2 (the cutoff used by Statsomat), suggesting an acceptable model fit. ")
-  chi2todf <- TRUE 
-} else {
-  cat(". This ratio is greater or equal than 2 (the cutoff used by Statsomat), suggesting a questionable or non-acceptable model fit. ") 
-}
+if ((max(stdload)<=0.5) || (max(stdload)<=0.6 && nfac>=8)){
+
+  cat("Directly related is the chi-square to the degrees of freedom ratio: ", fit@Fit@test$standard$stat,"/",fit@Fit@test$standard$df,"=",round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3))
+    
+  if  (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3) < 2){
+    cat(". This ratio is smaller than 2 (the cutoff used by Statsomat), suggesting an acceptable model fit. ")
+    
+  } else {
+    cat(". This ratio is greater or equal than 2 (the cutoff used by Statsomat), suggesting a questionable or non-acceptable model fit. ") 
+  }
+}  
+
+chi2todf <- (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3) < 2) 
+chi2todf_weight <- ((max(stdload)<=0.5) || (max(stdload)<=0.6 && nfac>=8))*1L
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
@@ -375,26 +391,30 @@ cat(" The Comparative Fit Index (CFI),  evaluates the fit of the your model in r
 
 if (round(fitMeasures(fit)["cfi"],2)>=0.9){
   cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],2),"is greater or equal than 0.90, suggesting an acceptable model fit. ")
-  cfi <- 0.5
 } else if (round(fitMeasures(fit)["cfi"],2)>=0.95) {
   cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],2),"is greater or equal than 0.95, suggesting a good model fit. ")
-    cfi <- 1
 } else {
   cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],2),"is smaller or equal than 0.90, suggesting a non-acceptable model fit. ")
 }
 
-cat("\\newline",fill=TRUE)
+cfi <- (round(fitMeasures(fit)["cfi"],2)>=0.9)
+cfi_weight <- 1L
+
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("The Tucker-Lewis Index (TLI), evaluates the fit of the your model in relation to the worst-fitting baseline model (which assumes independent variables). Overly complex models are penalized. Values can by any real numbers. ", fill=TRUE)
 
 if (round(fitMeasures(fit)["tli"],2)>=0.9){
   cat("Your TLI value of ",round(fitMeasures(fit)["tli"],2),"is greater or equal than 0.90, suggesting an acceptable model fit. ")
-  tli <- 0.5
 } else if (round(fitMeasures(fit)["tli"],2)>=0.95) {
   cat("Your TLI value of ",round(fitMeasures(fit)["tli"],2),"is greater or equal than 0.95, suggesting a good model fit. ")
-  tli <- 1
 } else {
   cat("Your TLI value of ",round(fitMeasures(fit)["tli"],2),"is smaller or equal than 0.90, suggesting a non-acceptable model fit. ")
 }
+
+tli <- (round(fitMeasures(fit)["tli"],2)>=0.9)
+tli_weight <- 1
 
 ```
 
@@ -403,21 +423,26 @@ cat("**Root Mean Square Error of Approximation:**", fill=TRUE)
 cat("\\newline",fill=TRUE)
 cat("The Root Mean Square Error of Approximation (RMSEA) is a parsimony correction fit index based on the chi-square absolute model fit index. Overly complex models are penalized. Values can be greater of equal than zero, with values close to zero suggesting an acceptable model fit. ", fill=TRUE)
 
-if (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.06){
-  cat("The upper limit of the confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is smaller than 0.06, suggesting an acceptable model fit. ")
-  rmsea <- TRUE
+if (round(fitMeasures(fit)["rmsea"],2)<0.08){
+  cat("The RMSEA: ",round(fitMeasures(fit)["rmsea"],2),"is smaller than 0.08, suggesting an acceptable model fit. ")
 } else {
-    cat("The upper limit of the confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is greater or equal than 0.06, suggesting a non-acceptable model fit. ")
+   cat("The RMSEA: ",round(fitMeasures(fit)["rmsea"],2),"is greater or equal than 0.08, suggesting a non-acceptable model fit. ")
 }
+
+# Consider weight based on Beauducel 2005
+rmsea <- (round(fitMeasures(fit)["rmsea"],2)<0.08)
+rmsea_weight <- 1-0.5*(nfac<=4 && max(stdload)>0.6)
 
 cat("\\newline",fill=TRUE)
 
 if (fitMeasures(fit)["rmsea.pvalue"]>0.05){
   cat("The p-value of close fit ",pformat(fitMeasures(fit)["rmsea.pvalue"]),"suggests that the RMSEA is not statistically significant larger than 0.05, suggesting an acceptable model fit. ")
-  rmseap <- TRUE
 } else {
   cat("The p-value of close fit ",pformat(fitMeasures(fit)["rmsea.pvalue"]),"suggests that the RMSEA is statistically significant larger than 0.05, suggesting a non-acceptable model fit. ")
 }
+
+rmseap <- (fitMeasures(fit)["rmsea.pvalue"]>0.05)
+rmseap_weight <- 1-0.5*(nfac<=4 && max(stdload)>0.6)
 
 ```
 
@@ -431,16 +456,32 @@ cat("\\newline",fill=TRUE)
 
 if (round(fitMeasures(fit)["srmr"],2)<0.08){
    cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],3),"is smaller than 0.08, suggesting an acceptable model. ")
-   srmr <- TRUE
 } else {
    cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],2),"is greater or equal than 0.08, suggesting a non-acceptable model. ")
 }
+
+srmr <- (round(fitMeasures(fit)["srmr"],2)<0.08)
+srmr_weight <- 1-0.5*(nfac<=4 && max(stdload)>0.6)
+
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-chi2 <- weightchi2(nrow(df_work),nfac,max(stdload))
-gof <- c(chi2)
-print(gof)
+cat("**Our Overall Interpretation:**", fill=TRUE)
+cat("In the overall interpretation of the goodness of fit of the model, we consider also additionally aspects of the data and the model, e.g. the sample size, the number of factors or the magnitude of the loadings. By considering these aspects, individual model fit indices are weighted. The weighting procedure is based on Beauducel & Wittmann 2005. ")
+
+if ((max(stdload)<=0.5) || (max(stdload)<=0.6 && nfac>=8)){
+  gof <- c(chi2,chi2todf,cfi,tli,rmsea,rmseap,srmr)
+  gof_weight <- c(chi2_weight,chi2todf_weight,cfi_weight,tli_weight,rmsea_weight,rmseap_weight,srmr_weight)
+  gof_names <- c("Chi2","Chi2toDF","CFI","TLI","RMSEA","RMSEA p-value","SRMR")
+  gof_df <- data.frame(gof,gof_weight,row.names=gof_names)
+} else {
+  gof <- c(chi2,cfi,tli,rmsea,rmseap,srmr)
+  gof_weight <- c(chi2_weight,cfi_weight,tli_weight,rmsea_weight,rmseap_weight,srmr_weight)
+  gof_names <- c("Chi2","CFI","TLI","RMSEA","RMSEA p-value","SRMR")
+  gof_df <- data.frame(gof,gof_weight,row.names=gof_names)
+}
+kable(gof_df,col.names=c("Goodness of Fit","Weight"),caption="Summary of the Model Fit Indices")
+
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}

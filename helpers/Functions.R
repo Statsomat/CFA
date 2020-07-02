@@ -71,7 +71,7 @@ pformat<-function(p){
 # Weight for chi2 index 
 weightchi2 <- function(n,nfactors,loadings){
   
-  if ((n<=250 && nfactors <=4 && loadings %in% c(0.4,0.5)) || (n %in% c(251,500) && nfactors <=4 && loadings <=0.4) || (n <=250 && nfactors %in% c(5,8) && loadings <=0.4)) {
+  if ((n<=250 && nfactors <=4 && between(loadings,0.4,0.5)) || (between(n,251,500) && nfactors <=4 && loadings <=0.4) || (n <=250 && between(nfactors,5,8) && loadings <=0.4)) {
     weightchi2=0.5
   } else if (n<=250 && nfactors <=4 && loadings <=0.4) {
     weightchi2=1
