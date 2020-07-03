@@ -291,7 +291,6 @@ tryCatch({
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("\n# Interpretation", fill=TRUE)
 cat("\n## Overall Goodness of Fit", fill=TRUE)
-
 cat("We consider fit indices from the Model Summary to check the overall goodness of fit. Values from the Model Summary are rounded where appropiately. ", fill=TRUE)
 ```
 
@@ -367,10 +366,10 @@ if ((max(stdload)<=0.5) || (max(stdload)<=0.6 && nfac>=8)){
   cat("Directly related is the chi-square to the degrees of freedom ratio: ", fit@Fit@test$standard$stat,"/",fit@Fit@test$standard$df,"=",round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3))
     
   if  (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,3) < 2){
-    cat(". This ratio is smaller than 2 (the cutoff used by Statsomat), suggesting an acceptable model fit. ")
+    cat(". This ratio is smaller than the threshold value 2, suggesting an acceptable model fit. ")
     
   } else {
-    cat(". This ratio is greater or equal than 2 (the cutoff used by Statsomat), suggesting a questionable or non-acceptable model fit. ") 
+    cat(". This ratio is greater or equal than the threshold value 2, suggesting a questionable or non-acceptable model fit. ") 
   }
 }  
 
@@ -421,12 +420,12 @@ tli_weight <- 1
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("**Root Mean Square Error of Approximation:**", fill=TRUE)
 cat("\\newline",fill=TRUE)
-cat("The Root Mean Square Error of Approximation (RMSEA) is a parsimony correction fit index based on the chi-square absolute model fit index. Overly complex models are penalized. Values can be greater of equal than zero, with values close to zero suggesting an acceptable model fit. ", fill=TRUE)
+cat("The Root Mean Square Error of Approximation (RMSEA) is a parsimony correction fit index based on the chi-square absolute model fit index. Overly complex models are penalized. Values can be greater or equal than zero, with values close to zero suggesting an acceptable model fit. ", fill=TRUE)
 
 if (round(fitMeasures(fit)["rmsea"],2)<0.08){
-  cat("The RMSEA: ",round(fitMeasures(fit)["rmsea"],2),"is smaller than 0.08, suggesting an acceptable model fit. ")
+  cat("The RMSEA: ",round(fitMeasures(fit)["rmsea"],2),"is smaller than the threshold value 0.08, suggesting an acceptable model fit. ")
 } else {
-   cat("The RMSEA: ",round(fitMeasures(fit)["rmsea"],2),"is greater or equal than 0.08, suggesting a non-acceptable model fit. ")
+   cat("The RMSEA: ",round(fitMeasures(fit)["rmsea"],2),"is greater or equal than the threshold value 0.08, suggesting a non-acceptable model fit. ")
 }
 
 # Consider weight based on Beauducel 2005
@@ -442,7 +441,6 @@ if (fitMeasures(fit)["rmsea.pvalue"]>0.05){
 }
 
 rmseap <- (fitMeasures(fit)["rmsea.pvalue"]>0.05)
-rmseap_weight <- 1-0.5*(nfac<=4 && max(stdload)>0.6)
 
 ```
 
@@ -455,9 +453,9 @@ cat("The Standardized Root Mean Square Residual (SRMR) is an absolute model fit 
 cat("\\newline",fill=TRUE)
 
 if (round(fitMeasures(fit)["srmr"],2)<0.08){
-   cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],3),"is smaller than 0.08, suggesting an acceptable model. ")
+   cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],3),"is smaller than the threshold value 0.08, suggesting an acceptable model. ")
 } else {
-   cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],2),"is greater or equal than 0.08, suggesting a non-acceptable model. ")
+   cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],2),"is greater or equal than the threshold value 0.08, suggesting a non-acceptable model. ")
 }
 
 srmr <- (round(fitMeasures(fit)["srmr"],2)<0.08)
@@ -467,46 +465,75 @@ srmr_weight <- 1-0.5*(nfac<=4 && max(stdload)>0.6)
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("**Our Overall Interpretation:**", fill=TRUE)
-cat("In the overall interpretation of the goodness of fit of the model, we consider also additionally aspects of the data and the model, e.g. the sample size, the number of factors or the magnitude of the loadings. By considering these aspects, individual model fit indices are weighted. The weighting procedure is based on Beauducel & Wittmann 2005. ")
+cat("\\newline",fill=TRUE)  
+cat("In the overall interpretation of the fit indices, we consider also additionally aspects of the data resp. the model, e.g. the sample size, the number of factors or the magnitude of the loadings. We summarize the results and add a performance weight of the fit indices, based on results from Beauducel & Wittmann [@beauducel]:")
 
 if ((max(stdload)<=0.5) || (max(stdload)<=0.6 && nfac>=8)){
   gof <- c(chi2,chi2todf,cfi,tli,rmsea,rmseap,srmr)
-  gof_weight <- c(chi2_weight,chi2todf_weight,cfi_weight,tli_weight,rmsea_weight,rmseap_weight,srmr_weight)
-  gof_names <- c("Chi2","Chi2toDF","CFI","TLI","RMSEA","RMSEA p-value","SRMR")
+  gof_weight <- c(chi2_weight,chi2todf_weight,cfi_weight,tli_weight,rmsea_weight,NA,srmr_weight)
+  gof_names <- c("Chi2 p-value","Chi2toDF","CFI","TLI","RMSEA","RMSEA p-value","SRMR")
   gof_df <- data.frame(gof,gof_weight,row.names=gof_names)
+  gof_df2 <- gof_df[,-c(6)]
 } else {
   gof <- c(chi2,cfi,tli,rmsea,rmseap,srmr)
-  gof_weight <- c(chi2_weight,cfi_weight,tli_weight,rmsea_weight,rmseap_weight,srmr_weight)
-  gof_names <- c("Chi2","CFI","TLI","RMSEA","RMSEA p-value","SRMR")
+  gof_weight <- c(chi2_weight,cfi_weight,tli_weight,rmsea_weight,NA,srmr_weight)
+  gof_names <- c("Chi2 p-value","CFI","TLI","RMSEA","RMSEA p-value","SRMR")
   gof_df <- data.frame(gof,gof_weight,row.names=gof_names)
+  gof_df2 <- gof_df[,-c(5)]
 }
-kable(gof_df,col.names=c("Goodness of Fit","Weight"),caption="Summary of the Model Fit Indices")
+
+options(knitr.kable.NA = '')
+kable(gof_df, col.names=c("Goodness of Fit","Weight"))
+
+interpret(gof_df2)
 
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-cat("Notes: In our interpretation, we will use the term *variables* instead of *indicators* or *items*. ")
+cat("\n## Localized Area of Strain", fill=TRUE)
+cat("In the next step, we investigate the residuals and the modification indices, which  are \"frequently used to identify focal areas of misfit in CFA solution\" [@cfa]. ", fill=TRUE)
 ```
 
-```{r, dev="cairo_pdf", eval=eval2}
-# On the covariance matrix
-inspect(fit, what="cov.ov") # Fitted cov
-inspect(fit, "sampstat")$cov  # Observed cov 
-resid(fit, "raw")$cov # Residuals on cov
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("**Residuals:**", fill=TRUE)
+cat("We consider in what follows: ", fill=TRUE)
+```
 
-# On the correlation matrix
-inspect(fit, what="cor.ov") # Fitted corr
-lavCor(fit) # Observed cor
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+# Covariance matrix
+# inspect(fit, "sampstat")$cov  # Observed cov 
+# inspect(fit, what="cov.ov") # Fitted cov
+covraw <- resid(fit, type="raw")$cov # Residuals on cov
+cat("Vizualization of the residual covariance matrix")
+corrplot::corrplot(covraw, is.corr = FALSE,
+               type = 'lower',
+               order = "original",
+               tl.col='black', tl.cex=.75, number.cex=0.75, method="number")
+
+covstd <-resid(fit, type="standardized")$cov # Std residuals on cov
+cat("Vizualization of the standardized residual matrix")
+corrplot::corrplot(covstd, is.corr = FALSE,
+               type = 'lower',
+               order = "original",
+               tl.col='black', tl.cex=.75, number.cex=0.75, method="number")
+
+
+# Correlation matrix
+# inspect(fit, what="cor.ov") # Fitted corr
+# lavCor(fit) # Observed cor
 r <- resid(fit, "cor")$cov # Residuals on cor
-r
+cat("Vizualization of the residual correlation matrix")
 corrplot::corrplot(r, is.corr = FALSE,
                type = 'lower',
                order = "original",
-               tl.col='black', tl.cex=.75)
+               tl.col='black', tl.cex=.75, number.cex=0.75, method="number")
+```  
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("\n## Parameter Estimates", fill=TRUE)
 ```  
 
 ```{r, dev="cairo_pdf", eval=eval2}
-cat("\n## Parameter Estimates", fill=TRUE)
 standardizedSolution(fit, type="std.all")
 ```  
 
@@ -522,6 +549,7 @@ tryCatch({
 # Title 
 cat("\n# R Statistical Methods", fill=TRUE)
 cat("The statistical analysis was done using R [@stats]. ", fill=TRUE)
+cat("In our interpretation, we will use the term *variables* instead of *indicators* or *items*. ")
 cat("\\newline",fill=TRUE)    
     
     
