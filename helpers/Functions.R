@@ -67,53 +67,15 @@ pformat<-function(p){
 }
 
 
-
-# Weight for chi2 index 
-weightchi2 <- function(n,nfactors,loadings){
-  
-  if ((n<=250 && nfactors <=4 && between(loadings,0.4,0.5)) || (between(n,251,500) && nfactors <=4 && loadings <=0.4) || (n <=250 && nfactors>4 && loadings <=0.4)) {
-    weightchi2=0.5
-  } else if (n<=250 && nfactors <=4 && loadings <=0.4) {
-    weightchi2=1
+# Cutoff value srmr
+cutsrmr <- function(n){
+  if (n<1000){
+    return(0.08)
   } else {
-    weightchi2=0
-} 
- return(weightchi2)
+    return(0.06)
+  }
 }
 
-
-# Interpret gof data frame 
-interpret <- function(x){
-  
-  # Drop cases with zero weight
-  x<- x[which(x$gof_weight>0),]
-  
-  # Just one value there, TRUE or FALSE
-  if (length(unique(x$gof))==1 && x$gof[1]==TRUE){
-    cat("Given the summary of the indices from above, we assume an overall acceptable model fit. ")
-  } else if (length(unique(x$gof))==1 && x$gof[1]==FALSE){
-    cat("Given the summary of the indices from above, we assume an overall non-acceptable model fit. The solution resp. the parameter estimates are not further interpreted. ")
-    interpret_pe <- (length(unique(x$gof))==1 && x$gof[1]==FALSE)
-  } else {
-  
-    # Just one value for weight 1
-    x1 <- x[which(x$gof_weight==1),]  
-    if (length(unique(x1$gof))==1 && x1$gof[1]==TRUE){
-      cat("Given the summary of the indices from above, there is some evidence for an acceptable model fit. ")
-      
-      x05 <- x[which(x$gof_weight==0.5),]  
-      if (length(unique(x05$gof))==2){
-        cat("Nevertheless, we find also contradictory model fit indicators, which forces us to treat an acceptance of this model with caution. We recommand further investigations of your data and model. ")
-      }
-      
-    } else if (length(unique(x1$gof))==1 && x1$gof[1]==FALSE){
-      cat("Given the summary of the indices from above, we assume an overall non-acceptable goodness of fit of the model. The solution resp. the parameter estimates are not further interpreted. ")
-      interpret_pe <- (length(unique(x$gof))==1 && x$gof[1]==FALSE)
-    }
-
-  }  
-  
-}
 
 
 

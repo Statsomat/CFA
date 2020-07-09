@@ -165,6 +165,7 @@ f3 =~ x7 + x8 + x9
                                     background-image: url('Button.gif');
                                     border: none;
                                     outline: none;
+                                    box-shadow: none !important;
                                    ")
                      
                      
