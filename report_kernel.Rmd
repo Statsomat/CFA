@@ -385,37 +385,8 @@ eval3 <- (eval2 && dfindic)
 
 cat("The test statistic with the value ",round(fit@Fit@test$standard$stat,3),"represents the difference between summaries of the model-implied covariance matrix and the observed covariance matrix. ")
 cat("The p-value of the test of a zero difference is ", pformat(fit@Fit@test$standard$pvalue),". ")
-cat("A positive chi-square model fit index is usually determined by a p-value larger than 0.05. The chi-square model fit index is an absolute fit index which heavily depends on several data and model characteristics e.g. sample size, number of factors and other. Therefore, we will not consider it in the further goodness of fit interpretation. ")
+cat("A positive chi-square model fit index is usually determined by a p-value larger than the threshold value 0.05. The chi-square model fit index is an absolute fit index which heavily depends on several data and model characteristics e.g. sample size, number of factors and other. Therefore, we will not consider it in the overall goodness of fit summary. ")
 
-```
-
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
-#########
-# AGFI, sensitive to misspecification, conservative
-#########
-
-if (nrow(df_work) < 1000){
-
-    cat("Directly related is the chi-square to the degrees of freedom ratio, also called the adjusted goodness of fit index (AGFI): ", fit@Fit@test$standard$stat,"/",fit@Fit@test$standard$df,"=",round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,2))
-  
-  if (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,2) < 2){
-      cat(". This ratio is smaller than the threshold value 2, suggesting a good model fit. ")
-  } else if  (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,2) < 3){
-      cat(". This ratio is smaller than the threshold value 3, suggesting an acceptable model fit. ")
-  } else if (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,2) < 4) {
-      cat(". This ratio is smaller than the threshold value 4, suggesting an acceptable model fit. ")
-  } else {
-      cat(". This ratio is greater or equal than the threshold value 4, suggesting a non-acceptable model fit. ") 
-  }
-  
-  cat("Considering the available sample size, we assume a fair enough AGFI and take it over in the summary of the goodness of fit. ")
-  
-  agfi1<- (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,2) < 4)*1L
-  agfi2<- (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,2) < 3)*1L
-  agfi3<- (round(fit@Fit@test$standard$stat/fit@Fit@test$standard$df,2) < 2)*1L
-  chi2todf <- agfi1 + agfi2 + agfi3
-
-}
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
@@ -423,7 +394,18 @@ cat("**Model Test Baseline Model**", fill=TRUE)
 cat("\\newline",fill=TRUE)
 
 # Null model
-cat(" The test statistic with the value ",round(fit@baseline$test$standard$stat,3), " represents the difference between summaries of another model-implied covariance matrix with zero covariances (a baseline model assuming independent variables, i.e. a worst fitting model) and the observed covariance matrix. It is used only indirectly in model fit indices and not further interpreted here. ", fill=TRUE)
+cat(" The test statistic with the value ",round(fit@baseline$test$standard$stat,3), " represents the difference between summaries of the baseline model (another model-implied covariance matrix having zero covariances, a worst fitting model assuming independent variables) and the observed covariance matrix. ", fill=TRUE)
+
+if (fit@baseline$test$standard$pvalue > 0.05){
+  cat("The p-value of the test of a zero difference is", pformat(fit@baseline$test$standard$pvalue)," suggesting that the baseline model would fit acceptable to the data. ")
+  nullmodell <- TRUE
+} else {
+  nullmodell <- FALSE
+}
+
+# RMSEA null model =√{\frac{χ^2}{N \times df} - \frac{1}{N}} \times √{G}
+rmseanull <- sqrt((fit@baseline$test$standard$stat-fit@baseline$test$standard$df)/(nrow(df_work)*fit@baseline$test$standard$df))
+
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
@@ -473,33 +455,32 @@ tli <- tli1 + tli2
 # RMSEA
 cat("**Root Mean Square Error of Approximation:**", fill=TRUE)
 cat("\\newline",fill=TRUE)
-cat("The Root Mean Square Error of Approximation (RMSEA) is a parsimony correction fit index based on the chi-square absolute model fit index. Overly complex models are penalized. Values can be greater or equal than zero, with values close to zero suggesting an acceptable model fit. ", fill=TRUE)
+cat("The Root Mean Square Error of Approximation (RMSEA) is an absolute fit index based on the chi-square test statistic, which corrects for parsimony. Overly complex models are penalized. Values can be greater or equal than zero, with values close to zero suggesting an acceptable model fit. ", fill=TRUE)
 
-if (round(fitMeasures(fit)["rmsea"],2)<0.06){
-  cat("The RMSEA: ",round(fitMeasures(fit)["rmsea"],2),"is smaller than the threshold value 0.06, suggesting a good model fit. ")
-} else if (round(fitMeasures(fit)["rmsea"],2)<0.08){
-  cat("The RMSEA: ",round(fitMeasures(fit)["rmsea"],2),"is smaller than the threshold value 0.08, suggesting an acceptable model fit. ")
-} else if (round(fitMeasures(fit)["rmsea"],2)<0.1){
-  cat("The RMSEA: ",round(fitMeasures(fit)["rmsea"],2),"is smaller than the threshold value 0.1, suggesting a mediocre fit. ")
+if (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.06){
+  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is smaller than the threshold value 0.06, suggesting a good model fit. ")
+} else if (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.08){
+  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is smaller than the threshold value 0.08, suggesting an acceptable model fit. ")
+} else if (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.1){
+  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is smaller than the threshold value 0.1, suggesting a mediocre fit. ")
 } else {
-  cat("The RMSEA: ",round(fitMeasures(fit)["rmsea"],2),"is greater or equal than the threshold value 0.1, suggesting a non-acceptable model fit. ")
+  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is greater or equal than the threshold value 0.1, suggesting a non-acceptable model fit. ")
 }
 
-# Consider weight based on Beauducel 2005
-rmsea0 <- (round(fitMeasures(fit)["rmsea"],2)<0.1)*1L
-rmsea1 <- (round(fitMeasures(fit)["rmsea"],2)<0.08)*1L
-rmsea2 <- (round(fitMeasures(fit)["rmsea"],2)<0.06)*1L
+# David Kenny criterium 
+if (rmseanull < 0.158){
+  cat("Moreover, we compute also the RMSEA of the baseline model: ",rmseanull)
+  if (nullmodel == TRUE){
+    cat(". Its low value is in line with the p-value of the chi-square test with respect to the baseline model. This suggests that the average correlation between the variables is not so high. ")
+  } else {
+    cat(". Its low value suggests that the average correlation between the variables is not so high. ")
+  }
+}
+
+rmsea0 <- (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.1)*1L
+rmsea1 <- (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.08)*1L
+rmsea2 <- (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.06)*1L
 rmsea <- rmsea0 + rmsea1 + rmsea2 
-
-# RMSEA p-value
-cat("\\newline",fill=TRUE)
-if (fitMeasures(fit)["rmsea.pvalue"]>0.05 && nrow(df_work) < 1000){
-  cat("The p-value of close fit ",pformat(fitMeasures(fit)["rmsea.pvalue"]),"suggests that the RMSEA is not statistically significant larger than 0.05, suggesting an at least acceptable model fit. ")
-} else {
-  cat("The p-value of close fit ",pformat(fitMeasures(fit)["rmsea.pvalue"]),"suggests that the RMSEA is statistically significant larger than 0.05, not suggesting an acceptable model fit. ")
-}
-
-rmseap <- (fitMeasures(fit)["rmsea.pvalue"]>0.05)*1L
 
 ```
 
@@ -522,50 +503,54 @@ srmr <- (round(fitMeasures(fit)["srmr"],2) < cutsrmr(nrow(df_work)))*1L
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-cat("**Our Overall Interpretation of the Goodness of Fit Indices:**", fill=TRUE)
+cat("**Our Model Fit Indices Summary:**", fill=TRUE)
 cat("\\newline",fill=TRUE)  
-cat("Depending on the quality of goodness of fit detected, each index gets a score. A high score suggests a good model fit. We summarize the scores by index category: ")
 
-if (nrow(df_work) < 1000){
-  gof <- c(cfi,tli,chi2todf,rmsea,rmseap,srmr)
-  cat <- c("Comparative", "Comparative", "Absolute", "Absolute", "Absolute", "Absolute")
-  gof_names <- c("CFI (score range 0-2)","TLI (score range 0-2)","AGFI (score range 0-3)", "RMSEA (score range 0-3)","RMSEA p-value (score range 0-1)","SRMR (score range 0-1)")
-} else {
-  gof <- c(cfi,tli,rmsea,srmr)
-  cat <- c("Comparative", "Comparative", "Absolute", "Absolute")
-  gof_names <- c("CFI","TLI","RMSEA","SRMR")
+# David Kenny 
+if (rmseanull < 0.158){
+  if (nullmodel == TRUE){
+    cat(". The chi-square test with respect to the baseline model and the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. In this case, the comparative model fit indices CFI and TLI may be too low, indicating just a small departure from the acceptable baseline model. Therefore, we consider in the summary of model indices only the RMSEA and the SRMR. ")
+  } else {
+    cat(".  the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. In this case, the comparative model fit indices CFI and TLI may be too low, indicating just a small departure from the acceptable baseline model. Therefore, we do not consider them in the summary of model indices. ")
+  }
+  
+  if (srmr==0 && rmsea==0){
+    cat("The absolute fit indices suggest a poor respectively non-acceptable model fit. ")
+    cat("Please reconsider your data and the theory behind. Moreover, unless you have exhausted reasonable respecifications, you could try to respecificate your model. ")  
+  } else if (srmr != rmsea){
+    cat("There is some support for your model. ")
+    cat("Please consider that the model may be not better than the baseline model. ")
+  } else if (srmr > 0 && rmsea > 0){
+    cat("The absolute fit indices suggest that your model is acceptable for your data. ")
+    cat("Please consider that the model may be not better than the baseline model. ")
+  }
 }
 
-gof_df <- data.frame(gof,cat,row.names = gof_names)
-options(knitr.kable.NA = '')
-kable(gof_df, col.names=c("Score", "Index Category"))
+  
+if (rmseanull >= 0.158){
+  cat("We consider in our summary only the model indices TLI, RMSEA and the SRMR. ")
 
-# Interpret GOF
-if (nrow(df_work) < 1000){
-  if (max(cfi,tli) == 0){
-    if (srmr == 0){
-      cat("Both absolute and comparative indices suggest a poor goodness of fit of the model. ")
-    } else {
-      cat("There is some support for your model from absolute model fit indices but the comparative model fit indices suggest a poor goodness of fit of the model. ")
-    }
-    cat("Unless you have exhausted reasonable respecifications, you could try to respecificate your model. ")  
-  } else if (max(cfi,tli) == 1){
-  if (srmr == 0){
-      cat("There is some support for your model from comparative model fit indices but absolute model fit indices suggest a poor goodness of fit of the model. ")
-    } else {
-      cat("The overall support for your model from the model fit indices is modest. ")
-    }
-    cat("Unless you have exhausted reasonable respecifications, you could try to respecificate your model. ")  
-  } else { 
-     if (srmr == 0){
-       cat("There is some support for your model from comparative model fit indices but absolute model fit indices suggest a poor goodness of fit of the model. ")
-       cat("Unless you have exhausted reasonable respecifications, you could try to respecificate your model. ")  
-     } else {
-       cat("The model fit indices suggest an acceptable goodness of model fit. ")
-     }
+  if (tli ==0 && srmr==0 && rmsea==0){
+    cat("Absolute and comparative indices suggest a poor goodness of fit of the model. ")
+  } else if (tli >= 1 && srmr==0 && rmsea == 0) {
+      cat("Your model is better than the baseline model. Nevertheless, the absolute fit indices suggest a poor resp. a non-acceptable model fit. ")
+      cat("Unless you have exhausted reasonable respecifications, you could try to respecificate your model. ")  
+  } else if (tli == 1 && srmr==1 && rmsea == 0) {
+      cat("")
   }
 
+  
 }
+
+
+
+
+
+  
+  
+  
+
+
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
