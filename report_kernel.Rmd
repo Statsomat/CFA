@@ -323,7 +323,7 @@ cat("\n## Residual correlation matrix", fill=TRUE)
 # inspect(fit, what="cor.ov") # Fitted corr
 # lavCor(fit) # Observed cor
 r <- resid(fit, "cor")$cov # Residuals on cor
-cat("We consider and vizualize also the residual correlation matrix, which is the difference between the sample and the model-implied covariance matrix: ")
+cat("A better interpretation allows also the residual correlation matrix (the difference between the sample and the model-implied correlation matrix: ")
 cat("\\newline",fill=TRUE)   
 corrplot::corrplot(r, is.corr = FALSE,
                type = 'lower',
@@ -345,8 +345,8 @@ if (nrow(mi)>0){
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("\n# Interpretation", fill=TRUE)
-cat("\n## Goodness of Fit Indices", fill=TRUE)
-cat("We consider selected fit indices from the Model Summary to check the goodness of fit of the model. Values from the Model Summary are rounded where appropiately. We consider following classes for the goodness of fit: Non-acceptable, mediocre, acceptable and good. Our interpretation is based mainly on [@cfa] and [@kline] and afferent articles. ", fill=TRUE)
+cat("\n## Overall Goodness of Fit", fill=TRUE)
+cat("We consider selected model fit indices from the Model Summary to check the goodness of fit of the model. ", fill=TRUE)
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
@@ -364,7 +364,7 @@ knowns <- (vars*(vars+1))/2+vars # Single-group, FIML
 
 
 if (fit@Fit@test$standard$df>0){
-  cat("The degrees of freedom (df) are", fit@Fit@test$standard$df, "and positive, indicating an over-identified model, fact which basically enables further analysis and interpretation. ")
+  cat("The degrees of freedom (df) equal", fit@Fit@test$standard$df, "and are positive, indicating an over-identified model, fact which basically enables further analysis and interpretation. ")
   dfindic <- TRUE
 } else if (fit@Fit@test$standard$df==0){
    cat("The degrees of freedom (df) are", fit@Fit@test$standard$df, ", indicating a just-identified or saturated model. ")
@@ -383,9 +383,17 @@ eval3 <- (eval2 && dfindic)
 ### Chi2
 ########
 
-cat("The test statistic with the value ",round(fit@Fit@test$standard$stat,3),"represents the difference between summaries of the model-implied covariance matrix and the observed covariance matrix. ")
-cat("The p-value of the test of a zero difference is ", pformat(fit@Fit@test$standard$pvalue),". ")
-cat("A positive chi-square model fit index is usually determined by a p-value larger than the threshold value 0.05. The chi-square model fit index is an absolute fit index which heavily depends on several data and model characteristics e.g. sample size, number of factors and other. Therefore, we will not consider it in the overall goodness of fit summary. ")
+cat("The test statistic with the value ",round(fit@Fit@test$standard$stat,3),"represents the difference between summaries of the model-implied covariance matrix and the observed covariance matrix. The chi-square model fit index is determined by the p-value of the test of a zero difference. If the p-value is larger than",cutchi2(nrow(df_work)),"then the test is not statistically significant at ",cutchi2(nrow(df_work))*100,"% error. In this case, we consider the chi-square model fit index to be positive. The chi-square model fit index is an absolute fit index which tests for an exact model fit. ")
+cat("\\newline",fill=TRUE)
+cat("The p-value with respect to your model is ", pformat(fit@Fit@test$standard$pvalue))
+
+if (round(fit@Fit@test$standard$pvalue,3) > cutchi2(nrow(df_work))){
+  cat(" suggesting an acceptable model fit. ")
+  chi2 <- 1L
+} else {
+  cat(" suggesting that the model may be not acceptable for the data. We will evaluate this result in connection with other following insights. ")
+  chi2 <- 0L
+}
 
 ```
 
@@ -394,10 +402,10 @@ cat("**Model Test Baseline Model**", fill=TRUE)
 cat("\\newline",fill=TRUE)
 
 # Null model
-cat(" The test statistic with the value ",round(fit@baseline$test$standard$stat,3), " represents the difference between summaries of the baseline model (another model-implied covariance matrix having zero covariances, a worst fitting model assuming independent variables) and the observed covariance matrix. ", fill=TRUE)
+cat(" The test statistic with the value ",round(fit@baseline$test$standard$stat,3), " represents the difference between summaries of the baseline model (an alternative model-implied covariance matrix having zero covariances, i.e. a worst fitting model assuming independent variables) and the observed covariance matrix. ", fill=TRUE)
 
-if (fit@baseline$test$standard$pvalue > 0.05){
-  cat("The p-value of the test of a zero difference is", pformat(fit@baseline$test$standard$pvalue)," suggesting that the baseline model would fit acceptable to the data. ")
+if (round(fit@baseline$test$standard$pvalue,3) > cutchi2(nrow(df_work))){
+  cat("The p-value of the test of a zero difference is", pformat(fit@baseline$test$standard$pvalue)," suggesting that the baseline model would fit acceptable to the data. We will evaluate this result in connection with other following insights. ")
   nullmodell <- TRUE
 } else {
   nullmodell <- FALSE
@@ -409,77 +417,35 @@ rmseanull <- sqrt((fit@baseline$test$standard$stat-fit@baseline$test$standard$df
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-cat("**User Model versus Baseline Model**", fill=TRUE)
-cat("\\newline",fill=TRUE)
-
-#####
-# CFI
-#####
-
-cat(" The Comparative Fit Index (CFI),  evaluates the fit of the your model in relation to the worst-fitting baseline model described above. It ranges between zero and one, with values close to one suggesting good models. ", fill=TRUE)
-
-if (round(fitMeasures(fit)["cfi"],2)>=0.95) {
-  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],2),"is greater or equal than the threshold value 0.95, suggesting a good model fit. ")
-} else if (round(fitMeasures(fit)["cfi"],2)>=0.9){
-  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],2),"is greater or equal than the threshold value 0.90, suggesting an acceptable model fit. ")
-} else {
-  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],2),"is smaller or equal than the threshold value 0.90, suggesting a mediocre or non-acceptable model fit. ")
-}
-
-cfi1 <- (round(fitMeasures(fit)["cfi"],2)>=0.9)*1L
-cfi2 <- (round(fitMeasures(fit)["cfi"],2)>=0.95)*1L
-cfi <- cfi1 + cfi2 
-
-```
-
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
-
-# TLI
-cat("The Tucker-Lewis Index (TLI), evaluates the fit of the your model in relation to the worst-fitting baseline model described above. Overly complex models are penalized. Values can range outside zero and one but the index is interpreted similarly to CFI. ", fill=TRUE)
-
-if (round(fitMeasures(fit)["tli"],2)>=0.95) {
-  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],2),"is greater or equal than the threshold value 0.95, suggesting a good model fit. ")
-} else if (round(fitMeasures(fit)["cfi"],2)>=0.9){
-  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],2),"is greater or equal than the threshold value 0.90, suggesting an acceptable model fit. ")
-} else {
-  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],2),"is smaller or equal than the threshold value 0.90, suggesting a mediocre or non-acceptable model fit. ")
-}
-
-tli1 <- (round(fitMeasures(fit)["tli"],2)>=0.9)*1L
-tli2 <- (round(fitMeasures(fit)["tli"],2)>=0.95)*1L
-tli <- tli1 + tli2
-```
-
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
 
 # RMSEA
 cat("**Root Mean Square Error of Approximation:**", fill=TRUE)
 cat("\\newline",fill=TRUE)
 cat("The Root Mean Square Error of Approximation (RMSEA) is an absolute fit index based on the chi-square test statistic, which corrects for parsimony. Overly complex models are penalized. Values can be greater or equal than zero, with values close to zero suggesting an acceptable model fit. ", fill=TRUE)
 
-if (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.06){
-  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is smaller than the threshold value 0.06, suggesting a good model fit. ")
-} else if (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.08){
-  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is smaller than the threshold value 0.08, suggesting an acceptable model fit. ")
-} else if (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.1){
-  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is smaller than the threshold value 0.1, suggesting a mediocre fit. ")
+if (round(fitMeasures(fit)["rmsea.ci.upper"],3)<0.05){
+  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],3),"is smaller than the threshold value 0.05, suggesting a good model fit. ")
+} else if (round(fitMeasures(fit)["rmsea.ci.upper"],3)<0.08){
+  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],3),"is smaller than the threshold value 0.08, suggesting an acceptable model fit. ")
+} else if (round(fitMeasures(fit)["rmsea.ci.upper"],3)<0.1){
+  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],3),"is smaller than the threshold value 0.1, suggesting a mediocre but still acceptable fit. ")
 } else {
-  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],2),"is greater or equal than the threshold value 0.1, suggesting a non-acceptable model fit. ")
+  cat("The upper bound of the 90% confidence interval of the RMSEA: ",round(fitMeasures(fit)["rmsea.ci.upper"],3),"is greater or equal than the threshold value 0.1, suggesting a non-acceptable model fit. ")
 }
 
 # David Kenny criterium 
 if (rmseanull < 0.158){
   cat("Moreover, we compute also the RMSEA of the baseline model: ",rmseanull)
   if (nullmodel == TRUE){
-    cat(". Its low value is in line with the p-value of the chi-square test with respect to the baseline model. This suggests that the average correlation between the variables is not so high. ")
+    cat(". Its low value is in line with the p-value of the chi-square test with respect to the baseline model. This suggests that the average correlation between the variables is not so high We will consider this result in the overall goodness of fit evaluation. ")
   } else {
-    cat(". Its low value suggests that the average correlation between the variables is not so high. ")
+    cat(". Its low value suggests that the average correlation between the variables is not so high. We will consider this result in the overall goodness of fit evaluation. ")
   }
 }
 
-rmsea0 <- (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.1)*1L
-rmsea1 <- (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.08)*1L
-rmsea2 <- (round(fitMeasures(fit)["rmsea.ci.upper"],2)<0.06)*1L
+rmsea0 <- (round(fitMeasures(fit)["rmsea.ci.upper"],3)<0.1)*1L
+rmsea1 <- (round(fitMeasures(fit)["rmsea.ci.upper"],3)<0.08)*1L
+rmsea2 <- (round(fitMeasures(fit)["rmsea.ci.upper"],3)<0.05)*1L
 rmsea <- rmsea0 + rmsea1 + rmsea2 
 
 ```
@@ -494,70 +460,169 @@ cat("The Standardized Root Mean Square Residual (SRMR) is an absolute model fit 
 cat("\\newline",fill=TRUE)
 
 if (round(fitMeasures(fit)["srmr"],2) < cutsrmr(nrow(df_work))){
-   cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],2),"is smaller than the threshold value ",cutsrmr(nrow(df_work))," suggesting an at least acceptable model fit. ")
+   cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],2),"is smaller than the threshold value ",cutsrmr(nrow(df_work))," suggesting an acceptable model fit. ")
 } else {
-   cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],2),"is greater or equal than the threshold value ",cutsrmr(nrow(df_work))," suggesting a mediocre or non-acceptable model fit. ")
+   cat("The SRMR value of ",round(fitMeasures(fit)["srmr"],2),"is greater or equal than the threshold value ",cutsrmr(nrow(df_work))," suggesting a a poor model fit. ")
 }
 
 srmr <- (round(fitMeasures(fit)["srmr"],2) < cutsrmr(nrow(df_work)))*1L
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-cat("**Our Model Fit Indices Summary:**", fill=TRUE)
+cat("**User Model versus Baseline Model**", fill=TRUE)
+cat("\\newline",fill=TRUE)
+
+#####
+# CFI
+#####
+
+cat(" The Comparative Fit Index (CFI),  evaluates the fit of the your model in relation to the worst-fitting baseline model described above. It ranges between zero and one, with values close to one suggesting good models (in the sense of departure from the baseline model). ", fill=TRUE)
+
+# David Kenny 
+if (rmseanull < 0.158){
+  if (nullmodel == TRUE){
+    cat("The chi-square test with respect to the baseline model and the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. Therefore, the CFI indicates the departure from a presumptive acceptable baseline model. In this case, the CFI index is a poor model fit index and will not be further evaluated. ")
+  } else {
+    cat("The low RMSEA of the baseline model suggests that the average correlation between the variables is not so high. Therefore, the CFI indicates the departure from a presumptive acceptable baseline model. In this case, the CFI index is a poor model fit index and will not be further evaluated. ")
+  }
+} else {
+
+if (round(fitMeasures(fit)["cfi"],3)>=0.95) {
+  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],3),"is greater or equal than the threshold value 0.95, suggesting a good model fit or xxx better than the baseline model. ")
+} else if (round(fitMeasures(fit)["cfi"],2)>=0.9){
+  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],3),"is greater or equal than the threshold value 0.90, suggesting an acceptable model fit, or xxx better than the baseline model. ")
+} else {
+  cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],3),"is smaller or equal than the threshold value 0.90, suggesting a mediocre or non-acceptable model fit. ")
+}
+
+cfi1 <- (round(fitMeasures(fit)["cfi"],3)>=0.9)*1L
+cfi2 <- (round(fitMeasures(fit)["cfi"],3)>=0.95)*1L
+cfi <- cfi1 + cfi2 
+
+}
+
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+
+# TLI
+cat("The Tucker-Lewis Index (TLI), evaluates the fit of the your model in relation to the worst-fitting baseline model described above. Overly complex models are penalized. Values can range outside zero and one but the index is interpreted similarly to the CFI. ", fill=TRUE)
+
+# David Kenny 
+if (rmseanull < 0.158){
+  if (nullmodel == TRUE){
+    cat("The chi-square test with respect to the baseline model and the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. Therefore, the TLI indicates the departure from a presumptive acceptable baseline model. In this case, the CFI index is a poor model fit index and will not be further evaluated. ")
+  } else {
+    cat("The low RMSEA of the baseline model suggests that the average correlation between the variables is not so high. Therefore, the TLI indicates the departure from a presumptive acceptable baseline model. In this case, the CFI index is a poor model fit index and will not be further evaluated. ")
+  }
+} else {
+
+if (round(fitMeasures(fit)["tli"],3)>=0.95) {
+  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],3),"is greater or equal than the threshold value 0.95, suggesting a good model fit. ")
+} else if (round(fitMeasures(fit)["tli"],3)>=0.9){
+  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],3),"is greater or equal than the threshold value 0.90, suggesting an acceptable model fit. ")
+} else {
+  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],3),"is smaller or equal than the threshold value 0.90, suggesting a mediocre or non-acceptable model fit. ")
+}
+
+tli1 <- (round(fitMeasures(fit)["tli"],3)>=0.9)*1L
+tli2 <- (round(fitMeasures(fit)["tli"],3)>=0.95)*1L
+tli <- tli1 + tli2
+
+}
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("**Overall Goodness of Fit Summary:**", fill=TRUE)
 cat("\\newline",fill=TRUE)  
 
 # David Kenny 
 if (rmseanull < 0.158){
   if (nullmodel == TRUE){
-    cat(". The chi-square test with respect to the baseline model and the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. In this case, the comparative model fit indices CFI and TLI may be too low, indicating just a small departure from the acceptable baseline model. Therefore, we consider in the summary of model indices only the RMSEA and the SRMR. ")
+    cat("As specified above, the chi-square test with respect to the baseline model and the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. In this case, the comparative fit indices CFI and TLI are poor model fit indices. Therefore, in the overall goodness of fit evaluation we consider only the chi-square, the RMSEA and the SRMR model fit indices. ")
   } else {
-    cat(".  the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. In this case, the comparative model fit indices CFI and TLI may be too low, indicating just a small departure from the acceptable baseline model. Therefore, we do not consider them in the summary of model indices. ")
+    cat("As specified above, the low RMSEA of the baseline model suggests that the average correlation between the variables is not so high. Therefore, in the overall goodness of fit evaluation we consider only the chi-square, the RMSEA and the SRMR model fit indices. ")
   }
   
-  if (srmr==0 && rmsea==0){
-    cat("The absolute fit indices suggest a poor respectively non-acceptable model fit. ")
-    cat("Please reconsider your data and the theory behind. Moreover, unless you have exhausted reasonable respecifications, you could try to respecificate your model. ")  
-  } else if (srmr != rmsea){
-    cat("There is some support for your model. ")
-    cat("Please consider that the model may be not better than the baseline model. ")
-  } else if (srmr > 0 && rmsea > 0){
-    cat("The absolute fit indices suggest that your model is acceptable for your data. ")
-    cat("Please consider that the model may be not better than the baseline model. ")
-  }
+  
+  if (chi2 == 0L && srmr==0L && rmsea==0L){
+    cat("The absolute fit indices suggest a poor respectively non-acceptable model fit. Therefore, we assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+    step1<-0 
+    
+  } else if (chi2 == 0L && srmr == 1L && rmsea == 0L){
+    cat("The chi-square model fit index and the RMSEA suggest a non-acceptable model fit. On the other hand there is some support for your model from the SRMR. We assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+    step1<-1
+    # A large sample size evtl. decreases the RMSEA and the SRMR indicates that the chi-square effect is not considerable. 
+    # Lack of parsimony --> Too many free parameters ? 
+   
+  } else if (chi2 == 0L && srmr == 0L && rmsea > 0L){
+    cat("The chi-square model fit index and the SRMR suggest a non-acceptable model fit. Therefore, we assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+    step1<-2
+    
+  } else if (chi2 == 1L && rmsea == 0L){
+    cat("The chi-square model fit index suggests an acceptable model fit. Even if the RMSEA suggests a non-acceptable model, tentatively assume that the model does fit the data well and verify this by considering further evaluations. ")
+    step1<-3
+    # Power enough? Increase sample size 
+    
+  } else if (chi2 == 1L && rmsea > 0L){
+    cat("The chi-square model fit index and the RMSEA suggest an acceptable model fit. We tentatively assume that the model does fit the data well and verify this by considering further evaluations. ")
+    step1<-4
+    
+  } 
+  
+} else {  #(rmseanull >= 0.158)
+  
+  cat("In the overall goodness of fit summary we consider only the model fit indices: Chi-square, RMSEA, SRMR and TLI. ")
+  
+  if (tli==0){
+    cat("The TLI suggests that your model is not sufficiently better than the baseline model. Therefore, we assume that your model is mediocre or non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+    step1<-5 
+ 
+     } else { #tli>0
+
+if (chi2 == 0L && srmr==0L && rmsea==0L){
+    cat("The absolute fit indices suggest a poor respectively non-acceptable model fit. Therefore, we assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+    step1<-6 
+    
+  } else if (chi2 == 0L && srmr == 1L && rmsea == 0L){
+    cat("The chi-square model fit index and the RMSEA suggest a non-acceptable model fit. On the other hand there is some support for your model from the SRMR and TLI. We assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+    step1<-7
+    # A large sample size evtl. decreases the RMSEA and the SRMR indicates that the chi-square effect is not considerable. 
+    # Lack of parsimony --> Too many free parameters ? 
+   
+  } else if (chi2 == 0L && srmr == 0L && rmsea > 0L){
+    cat("The chi-square model fit index and the SRMR suggest a non-acceptable model fit. Therefore, we assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+    step1<-8
+    
+  } else if (chi2 == 0L && srmr == 1L && rmsea > 0L){
+    cat("All these indices besides the chi-square model fit index suggest an acceptable model fit. We tentatively assume that the model does fit the data well and verify this assertion by considering further evaluations. ")
+    step1<-9
+    
+  } else if (chi2 == 1L && rmsea == 0L){
+    cat("The chi-square model fit index and the TLI suggest an acceptable model fit. Even if the RMSEA suggests a non-acceptable model, we tentatively assume that the model does fit the data well and verify this assertion by considering further evaluations. ")
+    step1<-10
+    # Power enough? Increase sample size 
+    
+  } else if (chi2 == 1L && rmsea > 0L){
+    cat("The chi-square model fit index, the RMSEA and the TLI suggest an acceptable model fit. We tentatively assume that the model does fit the data well and verify this assertion by considering further evaluations. ")
+    step1<-11
+    
+  } 
+}
+  
 }
 
-  
-if (rmseanull >= 0.158){
-  cat("We consider in our summary only the model indices TLI, RMSEA and the SRMR. ")
-
-  if (tli ==0 && srmr==0 && rmsea==0){
-    cat("Absolute and comparative indices suggest a poor goodness of fit of the model. ")
-  } else if (tli >= 1 && srmr==0 && rmsea == 0) {
-      cat("Your model is better than the baseline model. Nevertheless, the absolute fit indices suggest a poor resp. a non-acceptable model fit. ")
-      cat("Unless you have exhausted reasonable respecifications, you could try to respecificate your model. ")  
-  } else if (tli == 1 && srmr==1 && rmsea == 0) {
-      cat("")
-  }
-
-  
-}
-
-
-
-
-
-  
-  
-  
 
 
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("\n## Localized Area of Strain", fill=TRUE)
+cat("In this step, we investigate the residuals and the modification indices, which are \"frequently used to identify focal areas of misfit in CFA solution\" [@cfa]. ", fill=TRUE)
+
+cat("\\newline",fill=TRUE)  
 cat("**Residuals:**", fill=TRUE)
 cat("\\newline",fill=TRUE)  
-cat("In the next step, we investigate the residuals and the modification indices, which are \"frequently used to identify focal areas of misfit in CFA solution\" [@cfa]. ", fill=TRUE)
 cat("We vizualize the residual covariance matrix, which is the difference between the sample and the model-implied covariance matrix. Large absolute values tend to indicate areas of misfit. ")
 cat("A better interpretation allows the standardized residual matrix. We assume that absolute values larger than the threshold 2.58 [@byrne] indicate areas of misfit. ")
 cat("We consider and vizualize also the residual correlation matrix. We assume that absolute values larger than the threshold 0.1 indicate areas of misfit. ")
@@ -593,7 +658,8 @@ cat("\n# R Statistical Methods", fill=TRUE)
 cat("The statistical analysis was done using R [@stats]. ", fill=TRUE)
 cat("In our interpretation, we will use the term *variables* instead of *indicators* or *items*. ")
 cat("\\newline",fill=TRUE)    
-    
+
+cat("Our interpretation is based mainly on [@cfa] and [@kline] and afferent articles. ")   
     
 }, error=function(e) {cat("")}
 

@@ -67,14 +67,28 @@ pformat<-function(p){
 }
 
 
+# Cutoff value chi2
+cutchi2 <- function(n){
+  if (n<300){
+    return(0.05)
+  } else {
+    return(0.01)
+  }
+}
+
+
 # Cutoff value srmr
 cutsrmr <- function(n){
-  if (n<1000){
-    return(0.08)
+  if (n<300){
+    return(0.1)
+  } else if (n<500){
+    return(0.08) 
   } else {
     return(0.06)
   }
 }
+
+
 
 
 
