@@ -476,16 +476,20 @@ cat("\\newline",fill=TRUE)
 # CFI
 #####
 
-cat(" The Comparative Fit Index (CFI),  evaluates the fit of the your model in relation to the worst-fitting baseline model described above. It ranges between zero and one, with values close to one suggesting good models (in the sense of departure from the baseline model). ", fill=TRUE)
 
 # David Kenny 
 if (rmseanull < 0.158){
   if (nullmodel == TRUE){
-    cat("The chi-square test with respect to the baseline model and the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. Therefore, the CFI indicates the departure from a presumptive acceptable baseline model. In this case, the CFI index is a poor model fit index and will not be further evaluated. ")
+    cat("The chi-square test with respect to the baseline model and the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. Therefore, the CFI and the TLI indicate the departure from a baseline model which may be acceptable. In this case, the CFI and the TLI indices are poor model fit indices and will not be further evaluated. ")
   } else {
-    cat("The low RMSEA of the baseline model suggests that the average correlation between the variables is not so high. Therefore, the CFI indicates the departure from a presumptive acceptable baseline model. In this case, the CFI index is a poor model fit index and will not be further evaluated. ")
+    cat("The low RMSEA of the baseline model suggests that the average correlation between the variables is not so high. Therefore, the CFI and the TLI indicate the departure from a baseline model which may be acceptable. In this case, the CFI and the TLI indices are poor model fit indices and will not be further evaluated. ")
   }
 } else {
+
+
+cat(" The Comparative Fit Index (CFI),  evaluates the fit of the your model in relation to the worst-fitting baseline model described above. It ranges between zero and one, with values close to one suggesting good models (in the sense of departure from the baseline model). ", fill=TRUE)
+
+
 
 if (round(fitMeasures(fit)["cfi"],3)>=0.95) {
   cat("Your CFI value of ",round(fitMeasures(fit)["cfi"],3),"is greater or equal than the threshold value 0.95, suggesting a good model fit or xxx better than the baseline model. ")
@@ -505,29 +509,28 @@ cfi <- cfi1 + cfi2
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 
+#####
 # TLI
-cat("The Tucker-Lewis Index (TLI), evaluates the fit of the your model in relation to the worst-fitting baseline model described above. Overly complex models are penalized. Values can range outside zero and one but the index is interpreted similarly to the CFI. ", fill=TRUE)
+#####
+
 
 # David Kenny 
-if (rmseanull < 0.158){
-  if (nullmodel == TRUE){
-    cat("The chi-square test with respect to the baseline model and the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. Therefore, the TLI indicates the departure from a presumptive acceptable baseline model. In this case, the CFI index is a poor model fit index and will not be further evaluated. ")
+if (rmseanull >= 0.158){
+
+cat("The Tucker-Lewis Index (TLI), evaluates the fit of the your model in relation to the worst-fitting baseline model described above. Overly complex models are penalized. Values can range outside zero and one but the index is interpreted similarly to the CFI. ", fill=TRUE)
+
+  if (round(fitMeasures(fit)["tli"],3)>=0.95) {
+    cat("Your TLI value of ",round(fitMeasures(fit)["tli"],3),"is greater or equal than the threshold value 0.95, suggesting a good model fit. ")
+  } else if (round(fitMeasures(fit)["tli"],3)>=0.9){
+    cat("Your TLI value of ",round(fitMeasures(fit)["tli"],3),"is greater or equal than the threshold value 0.90, suggesting an acceptable model fit. ")
   } else {
-    cat("The low RMSEA of the baseline model suggests that the average correlation between the variables is not so high. Therefore, the TLI indicates the departure from a presumptive acceptable baseline model. In this case, the CFI index is a poor model fit index and will not be further evaluated. ")
+    cat("Your TLI value of ",round(fitMeasures(fit)["tli"],3),"is smaller or equal than the threshold value 0.90, suggesting a mediocre or non-acceptable model fit. ")
   }
-} else {
+  
+  tli1 <- (round(fitMeasures(fit)["tli"],3)>=0.9)*1L
+  tli2 <- (round(fitMeasures(fit)["tli"],3)>=0.95)*1L
+  tli <- tli1 + tli2
 
-if (round(fitMeasures(fit)["tli"],3)>=0.95) {
-  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],3),"is greater or equal than the threshold value 0.95, suggesting a good model fit. ")
-} else if (round(fitMeasures(fit)["tli"],3)>=0.9){
-  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],3),"is greater or equal than the threshold value 0.90, suggesting an acceptable model fit. ")
-} else {
-  cat("Your TLI value of ",round(fitMeasures(fit)["tli"],3),"is smaller or equal than the threshold value 0.90, suggesting a mediocre or non-acceptable model fit. ")
-}
-
-tli1 <- (round(fitMeasures(fit)["tli"],3)>=0.9)*1L
-tli2 <- (round(fitMeasures(fit)["tli"],3)>=0.95)*1L
-tli <- tli1 + tli2
 
 }
 ```
@@ -541,7 +544,7 @@ if (rmseanull < 0.158){
   if (nullmodel == TRUE){
     cat("As specified above, the chi-square test with respect to the baseline model and the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. In this case, the comparative fit indices CFI and TLI are poor model fit indices. Therefore, in the overall goodness of fit evaluation we consider only the chi-square, the RMSEA and the SRMR model fit indices. ")
   } else {
-    cat("As specified above, the low RMSEA of the baseline model suggests that the average correlation between the variables is not so high. Therefore, in the overall goodness of fit evaluation we consider only the chi-square, the RMSEA and the SRMR model fit indices. ")
+    cat("As specified above, the low RMSEA of the baseline model suggests that the average correlation between the variables is not so high. In this case, the comparative fit indices CFI and TLI are poor model fit indices. Therefore, in the overall goodness of fit evaluation we consider only the chi-square, the RMSEA and the SRMR model fit indices. ")
   }
   
   
@@ -570,46 +573,77 @@ if (rmseanull < 0.158){
     
   } 
   
+  
+  
 } else {  #(rmseanull >= 0.158)
   
-  cat("In the overall goodness of fit summary we consider only the model fit indices: Chi-square, RMSEA, SRMR and TLI. ")
+  cat("In the overall goodness of fit summary we consider the model fit indices: Chi-square, RMSEA, SRMR and TLI. ")
   
-  if (tli==0){
-    cat("The TLI suggests that your model is not sufficiently better than the baseline model. Therefore, we assume that your model is mediocre or non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
-    step1<-5 
- 
-     } else { #tli>0
+  
+  
+  if (tli>0){
 
-if (chi2 == 0L && srmr==0L && rmsea==0L){
-    cat("The absolute fit indices suggest a poor respectively non-acceptable model fit. Therefore, we assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
-    step1<-6 
+      if (chi2 == 0L && srmr==0L && rmsea==0L){
+        cat("The absolute fit indices suggest a poor respectively non-acceptable model fit. Therefore, we assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+        step1<-6 
+        
+      } else if (chi2 == 0L && srmr == 1L && rmsea == 0L){
+        cat("The chi-square model fit index and the RMSEA suggest a non-acceptable model fit. On the other hand there is some support for your model from the SRMR and TLI. We assume that your model is mediocre or non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+        step1<-7
+        # A large sample size evtl. decreases the RMSEA and the SRMR indicates that the chi-square effect is not considerable. 
+        # Lack of parsimony --> Too many free parameters ? 
+       
+      } else if (chi2 == 0L && srmr == 0L && rmsea > 0L){
+        cat("The chi-square model fit index and the SRMR suggest a non-acceptable model fit. Therefore, we assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+        step1<-8
+        
+      } else if (chi2 == 0L && srmr == 1L && rmsea > 0L){
+        cat("All these indices besides the chi-square model fit index suggest an acceptable model fit. We tentatively assume that the model does fit the data well and verify this assertion by considering further evaluations. ")
+        step1<-9
+        
+      } else if (chi2 == 1L && rmsea == 0L){
+        cat("The chi-square model fit index and the TLI suggest an acceptable model fit. Even if the RMSEA suggests a non-acceptable model, we tentatively assume that the model does fit the data well and verify this assertion by considering further evaluations. ")
+        step1<-10
+        # Power enough? Increase sample size 
+        
+      } else if (chi2 == 1L && rmsea > 0L){
+        cat("The chi-square model fit index, the RMSEA and the TLI suggest an acceptable model fit. We tentatively assume that the model does fit the data well and verify this assertion by considering further evaluations. ")
+        step1<-11
+      } 
     
-  } else if (chi2 == 0L && srmr == 1L && rmsea == 0L){
-    cat("The chi-square model fit index and the RMSEA suggest a non-acceptable model fit. On the other hand there is some support for your model from the SRMR and TLI. We assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
-    step1<-7
-    # A large sample size evtl. decreases the RMSEA and the SRMR indicates that the chi-square effect is not considerable. 
-    # Lack of parsimony --> Too many free parameters ? 
-   
-  } else if (chi2 == 0L && srmr == 0L && rmsea > 0L){
-    cat("The chi-square model fit index and the SRMR suggest a non-acceptable model fit. Therefore, we assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
-    step1<-8
     
-  } else if (chi2 == 0L && srmr == 1L && rmsea > 0L){
-    cat("All these indices besides the chi-square model fit index suggest an acceptable model fit. We tentatively assume that the model does fit the data well and verify this assertion by considering further evaluations. ")
-    step1<-9
     
-  } else if (chi2 == 1L && rmsea == 0L){
-    cat("The chi-square model fit index and the TLI suggest an acceptable model fit. Even if the RMSEA suggests a non-acceptable model, we tentatively assume that the model does fit the data well and verify this assertion by considering further evaluations. ")
-    step1<-10
-    # Power enough? Increase sample size 
     
-  } else if (chi2 == 1L && rmsea > 0L){
-    cat("The chi-square model fit index, the RMSEA and the TLI suggest an acceptable model fit. We tentatively assume that the model does fit the data well and verify this assertion by considering further evaluations. ")
-    step1<-11
+  } else { # tli==0
     
-  } 
-}
-  
+      if (chi2 == 0L && srmr==0L && rmsea==0L){
+        cat("All these fit indices suggest a poor respectively non-acceptable model fit. Therefore, we assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+        step1<-12 
+        
+      } else if (chi2 == 0L && srmr == 1L && rmsea == 0L){
+        cat("All these model fit indices besides SRMR indicate a poor model fit. We assume that your model is mediocre or non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+        step1<-13
+        # A large sample size evtl. decreases the RMSEA and the SRMR indicates that the chi-square effect is not considerable. 
+        # Lack of parsimony --> Too many free parameters ? 
+       
+      } else if (chi2 == 0L && srmr == 0L && rmsea > 0L){
+        cat("All these model fit indices besides RMSEA indicate a poor model fit. Therefore, we assume that your model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+        step1<-14
+        
+      } else if (chi2 == 0L && srmr == 1L && rmsea > 0L){
+        cat("The SRMR and the RMSEA indicate an acceptable model fit. But the TLI suggests that your model is not sufficiently better than the baseline model. We assume that your model is mediocre or non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+        step1<-15
+        
+      } else if (chi2 == 1L && rmsea == 0L){
+        cat("Even if the chi-square model fit index suggests an acceptable model fit, we tentatively assume that the model does not fit the data well and verify this assertion by considering further evaluations. ")
+        step1<-16
+        # Power enough? Increase sample size 
+        
+      } else if (chi2 == 1L && rmsea > 0L){
+        cat("The chi-square model fit index and the RMSEA suggest an acceptable model fit. Even if the TLI suggests that your model is not sufficiently better than the baseline model, we tentatively assume that the model does fit the data well and verify this assertion by considering further evaluations. ")
+        step1<-12
+      } 
+    }
 }
 
 
