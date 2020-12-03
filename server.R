@@ -252,8 +252,8 @@ shinyServer(function(input, output, session) {
     },
     
     error=function(e) {
-      # Usually Latex errors catched here
-      showNotification("Report generation error. Please contact the support@statsomat.com.",duration=10)
+      # Report not available 
+      showNotification("Error: The report cannot be generated for this dataset and model syntax. Please revise your data. ",duration=20)
       }
     )
     

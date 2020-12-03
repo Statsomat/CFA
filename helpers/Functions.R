@@ -88,8 +88,34 @@ cutsrmr <- function(n){
   }
 }
 
+# Standardized cov residuals 
+stand_residuals <- function(x,sign){
+  covstd <- resid(x, type="standardized")$cov # Std residuals on cov
+  if (sign=="neg"){
+    covstd = -covstd
+  }
+  m <- data.frame(which(covstd>=2.58, arr.ind=TRUE))
+  size <- nrow(m)/2 + 1
+  m <- m[size:nrow(m),]
+  m <- m[order(m$row),]
+  dimnames <- x@Model@dimNames[[1]][1][[1]]
+  dimnames2 <- data.frame(dimnames[m[,1]],dimnames[m[,2]])
+  return(dimnames2)
+}
 
-
-
+# Corr residuals 
+corr_residuals <- function(x,sign){
+  covstd <- resid(x, "cor")$cov # Residuals 
+  if (sign=="neg"){
+    covstd = -covstd
+  }
+  m <- data.frame(which(covstd>=0.1, arr.ind=TRUE))
+  size <- nrow(m)/2 + 1
+  m <- m[size:nrow(m),]
+  m <- m[order(m$row),]
+  dimnames <- x@Model@dimNames[[1]][1][[1]]
+  dimnames2 <- data.frame(dimnames[m[,1]],dimnames[m[,2]])
+  return(dimnames2)
+}
 
 
