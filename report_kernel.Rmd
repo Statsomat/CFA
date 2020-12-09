@@ -161,7 +161,7 @@ if (exists("cols_binary")){
 }
 
 
-cat("Character variables considered norminal and transformed to binary: ", fill=TRUE)
+cat("Character variables considered nominal and transformed to binary: ", fill=TRUE)
 if (exists("cols_dummy")){
   if (sum(cols_dummy)>0){
     cat(sum(cols_dummy),fill=TRUE)
@@ -230,11 +230,15 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 eval2 <- FALSE
 
 tryCatch({
-  
+  # No std of ov, default std of lv 
   fit <- cfa(params$model, data=df_work, missing="fiml", estimator="ML") 
-  pe <- parameterEstimates(fit, standardized=TRUE)
-  stdload <- pe[which(pe$op=="=~"),"std.all"]
-  nfac <- fit@pta$nfac[[1]]
+
+  # Parameter estimates for standardized all
+  #pe <- parameterEstimates(fit, standardized=TRUE)
+  #stdload <- pe[which(pe$op=="=~"),"std.all"]
+  
+  # Number of factors 
+  # nfac <- fit@pta$nfac[[1]]
   eval2 <- TRUE
 
 }, error=function(e) {
@@ -261,12 +265,11 @@ cat("Open issue", fill=TRUE)
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("\n# Model Settings", fill=TRUE)
-cat("Open issue", fill=TRUE)
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("\n# Outputs", fill=TRUE)
-cat("\n## Lavaan Summary", fill=TRUE)
+cat("\n## Model Fit Summary", fill=TRUE)
 ```
 
 ```{r, dev="cairo_pdf", eval=eval2}
@@ -287,18 +290,36 @@ tryCatch({
 
 ```
 
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+cat("\n## Completely Standardized Parameter Estimates", fill=TRUE)
+```  
+
 ```{r, dev="cairo_pdf", eval=eval3}
-cat("\n## Standardized Parameter Estimates", fill=TRUE)
-cat("Standardized Parameter Estimates with 95% Confidence Intervals")
-standardizedSolution(fit, type="std.all")
+fit2 <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", std.ov=TRUE) 
+standardizedSolution(fit2, type="std.all", output="text")
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
-cat("\n## Residual Covariance Matrix", fill=TRUE)
+cat("\n## Squared Multiple Correlations", fill=TRUE)
+pe <- parameterEstimates(fit, rsquare = TRUE)
+r2 <- pe[pe$op=="r2",c(1,4)]
+colnames(r2) <- c("Variable","R-Square")
+rownames(r2) <- NULL
+kable(r2,caption="R-Square",digits=2, row.names = NA)
+```  
 
-# Covariance matrix
-# inspect(fit, "sampstat")$cov  # Observed cov 
-# inspect(fit, what="cov.ov") # Fitted cov
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+cat("\n## Observed Covariance Matrix", fill=TRUE)
+inspect(fit, "sampstat")$cov  
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+cat("\n## Fitted Covariance Matrix", fill=TRUE)
+inspect(fit, what="cov.ov") # Fitted cov
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+cat("\n## Residual Covariance Matrix", fill=TRUE)
 covraw <- resid(fit, type="raw")$cov # Residuals on cov
 corrplot::corrplot(covraw, is.corr = FALSE,
                type = 'lower',
@@ -308,7 +329,6 @@ corrplot::corrplot(covraw, is.corr = FALSE,
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
 cat("\n## Standardized Residual Matrix", fill=TRUE)
-
 covstd <-resid(fit, type="standardized")$cov # Std residuals on cov
 corrplot::corrplot(covstd, is.corr = FALSE,
                type = 'lower',
@@ -330,10 +350,9 @@ corrplot::corrplot(r, is.corr = FALSE,
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
 cat("\n## Modification Indices", fill=TRUE)
-cat("Modification indices greater or equal than 3.84 in descending order. ", fill=TRUE)
 
 # MI for Correlation 
-mi_corr <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="~~")
+mi_corr <- modindices(fit, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="~~")
 mi_corr <- mi_corr[,c(-6,-8)]
 rownames(mi_corr) <- NULL
 if (nrow(mi_corr)>0){
@@ -342,7 +361,7 @@ if (nrow(mi_corr)>0){
 
 
 # MI for Factor Loadings 
-mi_fl <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="=~", delta=0.4)
+mi_fl <- modindices(fit, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="=~", delta=0.4)
 mi_fl <- mi_fl[,c(-6,-8)]
 rownames(mi_fl) <- NULL
 if (nrow(mi_fl)>0){
@@ -354,7 +373,7 @@ if (nrow(mi_fl)>0){
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
 cat("\n# Interpretation", fill=TRUE)
 cat("\n## Goodness of Fit Indices", fill=TRUE)
-cat("We consider several model fit indices from the Lavaan Summary to check the goodness of fit of the model. To decide for an acceptable or non-acceptable model, we apply thresholds which are well established in literature. ", fill=TRUE)
+cat("We consider some of the model fit indices from the Model Fit Summary section to check the goodness-of-fit of the model. To decide for an acceptable or non-acceptable model, we apply thresholds considered in the References: [@brown], [@kline]. ", fill=TRUE)
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
@@ -377,6 +396,7 @@ if (fit@Fit@test$standard$df>0){
   dfindic <- TRUE
 } else if (fit@Fit@test$standard$df==0){
    cat("The ", fit@Fit@test$standard$df, "degrees of freedom are indicating a just-identified or saturated model. ")
+   dfindic <- TRUE
 } else {
   cat("The ", fit@Fit@test$standard$df, "degrees of freedom is a negative number, indicating an under-identified model. This disables further analysis and interpretation. ")
 }
@@ -706,39 +726,90 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(stand_residuals(fit,"neg"))>0){
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("\n## Modification Indices", fill=TRUE)
-cat("In the interpretation of the modification indices we rely mostly on [@brown] and [@mi]. We cite from [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" Therefore, if adding a line with a high modification index to the model, i.e. if adding a parameter to the model, the overall goodness-of-fit may be improved. ")
+cat("In the interpretation of the modification indices we rely mostly on [@brown] and [@mi]. We cite from [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ")
 
 cat("\\newline",fill=TRUE)
-cat("In this app, we consider only modification indices greater or equal than 3.84. These represent modification indices which are statistically significant at 5% type I error. Next, we search only for modification indices which achieve a power of minimum 75% in detecting a misspecification of at least 0.1 for (residual) correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"*epc:m\"", fill=TRUE)
+cat("We consider only modification indices greater or equal than 3.84. These represent modification indices which are statistically significant at 5% type I error. Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for (residual) correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"*epc:m\".", fill=TRUE)
 
 # MI for correlation
-mi_corr2 <- mi_corr[mi_corr$decision=="*epc:m*",]
+mi_corr <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="~~")
+mi_corr2 <- mi_corr[mi_corr$decision=="*epc:m*",c(-6,-8)]
 if (nrow(mi_corr2)>0){
   kable(mi_corr2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Significant and Relevant MIs With Respect To (Residual) Correlations")
 } else {
   cat("\\newline",fill=TRUE)
-  cat("No relevant MIs.")
+  cat("We remark, that these conditions are not fulfilled by any of the modification indices of the table xxx. Therefore, there are no significant and relevant modification indices with respect to (residual) correlations. ")
   }
 
 
 # MI for factor loadings
-mi_fl2 <- mi_fl[mi_fl$decision=="*epc:m*",]
+mi_fl <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="=~", delta=0.4)
+mi_fl2 <- mi_fl[mi_fl$decision=="*epc:m*",c(-6,-8)]
 if (nrow(mi_fl2)>0){
   kable(mi_fl2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Significant and Relevant MIs With Respect To Factor Loadings")
 } else {
-  cat("No relevant MIs.")
+  cat("\\newline",fill=TRUE)
+  cat("We remark, that these conditions are not fulfilled by any of the modification indices of the table xxx. Therefore, there are no significant and relevant modification indices with respect to factor loadings. ")
   }
-
-
-cat("Please reconsider your data and the theory behind. ", fill=TRUE)  
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("\n##  Parameter Estimates", fill=TRUE)
+
+# No cross-loadings
+# pe <- parameterEstimates(fit, rsquare = TRUE) # already defined above 
+pe_stand <- standardizedsolution(fit2)
+pvalues_stand <- pe_stand[pe$op=="=~",7]
+estim_stand <- pe_stand[pe$op=="=~",4]
+pe_stand_sig_nonrel <- pe_stand[which(pe_stand$pvalue<=0.05 & pe_stand$op=="=~" & pe_stand$est.std<0.4),3]
+pe_stand_nonsig <- pe_stand[which(pe_stand$pvalue>0.05 & pe_stand$op=="=~"),3]
+pe_stand_nonsig_nonrel <- pe_stand[which(pe_stand$pvalue>0.05 & pe_stand$op=="=~" & pe_stand$est.std<0.4),3]
+r2_nonsig <- r2[r2$`R-Square`<0.7,1]
+
+if ((sum(pvalues_stand > 0.05)==0) && (sum(r2$`R-Square`<0.7)==0) && (sum(abs(estim_stand)<0.4)==0)) {
+  cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Moreover, in absolute value they are all greater than 0.4 which is considered a magnitude that is substantially meaningful [@brown].")
+  cat("Additionally, the minimum R-Square encountered in the section \"Squared Multiple Correlations\" is",min(r2$`R-Square`), " indicating that at least",min(r2$`R-Square`)," of the variance in the observed variables is accounted for by the latent variables which is satisfactory.")
+  
+} else if ((sum(pvalues_stand > 0.05) > 0)){
+  cat("Let us inspect the table \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") for the variables: ")
+  kable(pe_stand_nonsig)
+  cat("are not statistically significant at 5% type I error (i.e. p-value > 0.05). ")
+  
+  if (nrow(pe_stand_nonsig_nonrel)>0){
+    cat("Moreover, in this set there exist completely standardized factor loadings which in absolute value are smaller than 0.4 which is considered a magnitude that is substantially meaningful [@brown]: ")
+    pe_stand_nonsig_nonrel
+  } else {
+    cat("Nonsignificant but relevant. Sample size increase?")
+  }
+  
+} 
+
+
+
+if ((sum(pvalues_stand > 0.05)==0) && (sum(abs(estim_stand)<0.4)>0)) {
+  cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Nevertheless, the completely standardized factor loadings for these variables are in absolute value less than 0.4 which is considered a magnitude that is substantially meaningful [@brown]:")
+  pe_stand_sig_nonrel
+  cat("Significant but not relevant. ")
+  
+} 
+
+
+if ((sum(pvalues_stand > 0.05)==0) && (sum(r2$`R-Square`<0.7)>0) && (sum(abs(estim_stand)<0.4)==0)) {
+   cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Moreover, in absolute value they are all greater than 0.4 which is considered a magnitude that is substantially meaningful [@brown]. ")
+  cat("Nevertheless, there exist variables, for which the R-Square encountered in the section \"Squared Multiple Correlations\" is smaller than 0.7. ")
+  cat("For these variables, less than 70% of the variance is accounted for by the corresponding latent variables which is in our interpretation non-satisfactory: ")
+  kable(r2_nonsig)
+ 
+}
+  
+
+# Cross-loadings existent 
+
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-cat("\n## Model Respecification", fill=TRUE)
+cat("\n## Final Summary", fill=TRUE)
+cat("Please reconsider your data and the theory behind. ", fill=TRUE)  
 cat("Only if supported by the theory and research behind the data, you could try to update the model by a line with a high modification index and repeat the evaluation. The goodness of fit will be probably increased. Under certain conditions, additional parameters connected to the variable relationships above, could be added to the model specification. ", fill=TRUE)
 ```  
 
@@ -754,11 +825,8 @@ tryCatch({
 # Title 
 cat("\n# R Statistical Methods", fill=TRUE)
 cat("The statistical analysis was done using R [@stats]. ", fill=TRUE)
-cat("In our interpretation, we will use the term *variables* for *indicators* or *items*. ")
-cat("\\newline",fill=TRUE)    
-
-cat("Our interpretation is based mainly on [@cfa] and [@kline] and afferent articles. ")   
-    
+cat("In our interpretation, we use the term *variables* for *indicators* or *items*. ")
+cat("Our interpretation is based mainly on [@brown] and [@kline] and afferent articles. ")   
 }, error=function(e) {cat("")}
 
 )
