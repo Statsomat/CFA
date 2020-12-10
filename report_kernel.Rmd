@@ -701,7 +701,7 @@ cat("\\newline",fill=TRUE)
 
 # Misfit areas 
 if (nrow(stand_residuals(fit,"pos"))>0){
-  cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 [@kline]. In these cases, the zero-order covariance relationships between the involved variables are probably underestimated: ")
+  cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 [@kline]. In these cases, the zero-order covariance relationship between the involved variables is probably underestimated: ")
   both <- rbind(stand_residuals(fit,"pos"),corr_residuals(fit,"pos"))
   both <- both[order(both[,1],both[,2]),]
   kable(unique(both), row.names=FALSE, col.names=c("",""), caption = "Pairs with Underestimated Covariance")
@@ -710,7 +710,7 @@ if (nrow(stand_residuals(fit,"pos"))>0){
 }
 
 if (nrow(stand_residuals(fit,"neg"))>0){
- cat("Following variable pairs have standardized residuals which are smaller or equal than the considered threshold -2.58 [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 [@kline]. In these cases, the zero-order covariance relationships between the involved variables are probably overestimated: ")
+ cat("Following variable pairs have standardized residuals which are smaller or equal than the considered threshold -2.58 [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 [@kline]. In these cases, the zero-order covariance relationship between the involved variables is probably overestimated: ")
   both <- rbind(stand_residuals(fit,"neg"),corr_residuals(fit,"neg"))
   both <- both[order(both[,1],both[,2]),]
   kable(unique(both), row.names=FALSE, col.names=c("",""), caption = "Pairs with Overestimated Covariance")
@@ -720,7 +720,7 @@ if (nrow(stand_residuals(fit,"neg"))>0){
 
 
 if (nrow(stand_residuals(fit,"pos"))>0 || nrow(stand_residuals(fit,"neg"))>0){
-  cat("Depending on the sample size, the size of the misspecification detected by the analysis of the residual covariance resp. correlation matrices can be relevant or could be in practice neglected. This is matter of subject in the next section. ")
+  cat("Depending on the sample size, the misspecification detected by the analysis of the residual covariance resp. correlation matrices can be relevant or could be in practice neglected. This is matter of subject in the next section. ")
 }
 ```  
 
@@ -729,7 +729,7 @@ cat("\n## Modification Indices", fill=TRUE)
 cat("In the interpretation of the modification indices we rely mostly on [@brown] and [@mi]. We cite from [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ")
 
 cat("\\newline",fill=TRUE)
-cat("We consider only modification indices greater or equal than 3.84. These represent modification indices which are statistically significant at 5% type I error. Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for (residual) correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"*epc:m\".", fill=TRUE)
+cat("We consider only modification indices greater or equal than 3.84. These represent modification indices which are statistically significant at 5% type I error. Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for (residual) correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\".", fill=TRUE)
 
 # MI for correlation
 mi_corr <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="~~")
@@ -761,50 +761,59 @@ cat("\n##  Parameter Estimates", fill=TRUE)
 pe_stand <- standardizedsolution(fit2)
 pvalues_stand <- pe_stand[pe$op=="=~",7]
 estim_stand <- pe_stand[pe$op=="=~",4]
-pe_stand_sig_nonrel <- pe_stand[which(pe_stand$pvalue<=0.05 & pe_stand$op=="=~" & pe_stand$est.std<0.4),3]
-pe_stand_nonsig <- pe_stand[which(pe_stand$pvalue>0.05 & pe_stand$op=="=~"),3]
 pe_stand_nonsig_nonrel <- pe_stand[which(pe_stand$pvalue>0.05 & pe_stand$op=="=~" & pe_stand$est.std<0.4),3]
-r2_nonsig <- r2[r2$`R-Square`<0.7,1]
 
-if ((sum(pvalues_stand > 0.05)==0) && (sum(r2$`R-Square`<0.7)==0) && (sum(abs(estim_stand)<0.4)==0)) {
-  cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Moreover, in absolute value they are all greater than 0.4 which is considered a magnitude that is substantially meaningful [@brown].")
-  cat("Additionally, the minimum R-Square encountered in the section \"Squared Multiple Correlations\" is",min(r2$`R-Square`), " indicating that at least",min(r2$`R-Square`)," of the variance in the observed variables is accounted for by the latent variables which is satisfactory.")
+# Significant and relevant
+if ((sum(pvalues_stand > 0.05, na.rm = TRUE)==0) && (sum(abs(estim_stand) < 0.4, na.rm = TRUE)==0)) {
+  cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Moreover, in absolute value they are all greater than 0.4. This cutoff-value is considered in some CFA research areas a magnitude that is substantially meaningful [@brown]. ")
+  pe_stand_indic = "Significant and relevant"
   
-} else if ((sum(pvalues_stand > 0.05) > 0)){
-  cat("Let us inspect the table \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") for the variables: ")
-  kable(pe_stand_nonsig)
-  cat("are not statistically significant at 5% type I error (i.e. p-value > 0.05). ")
+} else if ((sum(pvalues_stand > 0.05, na.rm = TRUE) > 0)){
+  cat("Let us inspect the table \"Completely Standardized Parameter Estimates\". We remark that there exist completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") which are not statistically significant at 5% type I error (i.e. p-value > 0.05). ")
   
+  # Non significant non relevant 
   if (nrow(pe_stand_nonsig_nonrel)>0){
-    cat("Moreover, in this set there exist completely standardized factor loadings which in absolute value are smaller than 0.4 which is considered a magnitude that is substantially meaningful [@brown]: ")
-    pe_stand_nonsig_nonrel
+    cat("Moreover, (some) non-significant completely standardized factor loadings are in absolute value smaller than 0.4. This cutoff-value is considered in some CFA research areas a magnitude that is substantially meaningful [@brown]. ")
+    pe_stand_indic = "Non significant non relevant"
+  
+    # Non significant but relevant   
   } else {
-    cat("Nonsignificant but relevant. Sample size increase?")
+    cat("Nevertheless, the completely standardized factor loadings are in absolute value greater than 0.4. This cutoff value is considered in some CFA research areas a magnitude that is substantially meaningful [@brown]. Therefore, they are non-significant but they may be relevant. Probably a sample size increase will lead to significance in this matter of subject. ")
+    pe_stand_indic = "Non significant but relevant"
   }
   
 } 
 
 
-
-if ((sum(pvalues_stand > 0.05)==0) && (sum(abs(estim_stand)<0.4)>0)) {
-  cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Nevertheless, the completely standardized factor loadings for these variables are in absolute value less than 0.4 which is considered a magnitude that is substantially meaningful [@brown]:")
-  pe_stand_sig_nonrel
-  cat("Significant but not relevant. ")
-  
+# Significant but not relevant
+if ((sum(pvalues_stand > 0.05, na.rm = TRUE)==0) && (sum(abs(estim_stand) < 0.4, na.rm = TRUE)>0)) {
+  cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Nevertheless, (some) completely standardized factor loadings are in absolute value smaller than 0.4.This cutoff-value is considered in some CFA research areas a magnitude that is substantially meaningful [@brown]. ")
+  pe_stand_indic = "Significant but not relevant" 
 } 
 
 
-if ((sum(pvalues_stand > 0.05)==0) && (sum(r2$`R-Square`<0.7)>0) && (sum(abs(estim_stand)<0.4)==0)) {
-   cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Moreover, in absolute value they are all greater than 0.4 which is considered a magnitude that is substantially meaningful [@brown]. ")
-  cat("Nevertheless, there exist variables, for which the R-Square encountered in the section \"Squared Multiple Correlations\" is smaller than 0.7. ")
-  cat("For these variables, less than 70% of the variance is accounted for by the corresponding latent variables which is in our interpretation non-satisfactory: ")
-  kable(r2_nonsig)
- 
-}
-  
+# Interpreted Parameter Estimates
+pe_stand2 <- pe_stand[pe$op=="=~",c(3,4,7)]
+colnames(pe_stand2)[1] <- "Variable"
+pe_stand2 <- merge(pe_stand2,r2,by="Variable")
+pe_stand2 <- pe_stand2[,c(1,2,4,3)]
+pe_stand2$sig <- NA
+pe_stand2$sig[which(pe_stand2$pvalue <= 0.05)] <- "Significant"  
+pe_stand2$sig[which(pe_stand2$pvalue > 0.05)] <- "Non-Significant" 
+pe_stand2$rel <- NA
+pe_stand2$rel[which(pe_stand2$est.std <= 0.4)] <- "!"
+pe_stand2$rel[which(pe_stand2$est.std > 0.4)] <- "*"
+pe_stand2$rel[which(pe_stand2$est.std > 0.6)] <- "**"
+pe_stand2$rel[which(pe_stand2$est.std > 0.8)] <- "***"
+colnames(pe_stand2) <- c("","Correlation With Factor","Variance Explained By Factor","","Alpha 5%","")
 
-# Cross-loadings existent 
-
+# Print Interpreted Parameter Estimates
+library(kableExtra)
+opts <- options(knitr.kable.NA = "")
+x <- kable(pe_stand2,digits=3)
+add_header_above(x,c("Variable","Factor Loading","R-Square","P-Value","Significance","Relevance"))
+options(opts)  # restore global R options
+detach(package:kableExtra)  
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
