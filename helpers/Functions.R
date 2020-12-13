@@ -62,8 +62,12 @@ normality <- function(r){
   
 
 # p-value format
-pformat<-function(p){
-  if (p<0.001) return("<0.001") else return (round(p,3))
+pformat <- function(p){
+  if (is.na(p)){
+    return(NA)
+  } else if (p<0.001){ 
+    return("<0.001")
+  } else return (round(p,3))
 }
 
 

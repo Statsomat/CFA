@@ -724,7 +724,7 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(stand_residuals(fit,"neg"))>0){
 }
 ```  
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=FALSE}
 cat("\n## Modification Indices", fill=TRUE)
 cat("In the interpretation of the modification indices we rely mostly on [@brown] and [@mi]. We cite from [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ")
 
@@ -758,14 +758,15 @@ cat("\n##  Parameter Estimates", fill=TRUE)
 
 # No cross-loadings
 # pe <- parameterEstimates(fit, rsquare = TRUE) # already defined above 
-pe_stand <- standardizedsolution(fit2)
-pvalues_stand <- pe_stand[pe$op=="=~",7]
-estim_stand <- pe_stand[pe$op=="=~",4]
+# fit2 <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", std.ov=TRUE) 
+pe_stand <- standardizedsolution(fit2, type="std.all")
+pvalues_stand <- pe_stand[pe_stand$op=="=~",7]
+estim_stand <- pe_stand[pe_stand$op=="=~",4]
 pe_stand_nonsig_nonrel <- pe_stand[which(pe_stand$pvalue>0.05 & pe_stand$op=="=~" & pe_stand$est.std<0.4),3]
 
 # Significant and relevant
 if ((sum(pvalues_stand > 0.05, na.rm = TRUE)==0) && (sum(abs(estim_stand) < 0.4, na.rm = TRUE)==0)) {
-  cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Moreover, in absolute value they are all greater than 0.4. This cutoff-value is considered in some CFA research areas a magnitude that is substantially meaningful [@brown]. ")
+  cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Moreover, in absolute value they are all greater than 0.4. ")
   pe_stand_indic = "Significant and relevant"
   
 } else if ((sum(pvalues_stand > 0.05, na.rm = TRUE) > 0)){
@@ -773,7 +774,7 @@ if ((sum(pvalues_stand > 0.05, na.rm = TRUE)==0) && (sum(abs(estim_stand) < 0.4,
   
   # Non significant non relevant 
   if (nrow(pe_stand_nonsig_nonrel)>0){
-    cat("Moreover, (some) non-significant completely standardized factor loadings are in absolute value smaller than 0.4. This cutoff-value is considered in some CFA research areas a magnitude that is substantially meaningful [@brown]. ")
+    cat("Moreover, (some) non-significant completely standardized factor loadings are in absolute value smaller than 0.4. ")
     pe_stand_indic = "Non significant non relevant"
   
     # Non significant but relevant   
@@ -781,37 +782,65 @@ if ((sum(pvalues_stand > 0.05, na.rm = TRUE)==0) && (sum(abs(estim_stand) < 0.4,
     cat("Nevertheless, the completely standardized factor loadings are in absolute value greater than 0.4. This cutoff value is considered in some CFA research areas a magnitude that is substantially meaningful [@brown]. Therefore, they are non-significant but they may be relevant. Probably a sample size increase will lead to significance in this matter of subject. ")
     pe_stand_indic = "Non significant but relevant"
   }
-  
-} 
-
-
-# Significant but not relevant
-if ((sum(pvalues_stand > 0.05, na.rm = TRUE)==0) && (sum(abs(estim_stand) < 0.4, na.rm = TRUE)>0)) {
-  cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Nevertheless, (some) completely standardized factor loadings are in absolute value smaller than 0.4.This cutoff-value is considered in some CFA research areas a magnitude that is substantially meaningful [@brown]. ")
+ 
+  # Significant but not relevant 
+} else if ((sum(pvalues_stand > 0.05, na.rm = TRUE)==0) && (sum(abs(estim_stand) < 0.4, na.rm = TRUE)>0)) {
+  cat("Let us inspect the section \"Completely Standardized Parameter Estimates\". We remark that the completely standardized factor loadings (column \"est.std\" from the subsection \"Latent Variables\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Nevertheless, (some) completely standardized factor loadings are in absolute value smaller than 0.4. ")
   pe_stand_indic = "Significant but not relevant" 
 } 
 
+cat("This cutoff-value is considered in some CFA research areas a magnitude that is substantially meaningful [@brown]. Please consider also your particular research area when applying the results. ")
+cat("We summarize the interpretation of the completely standardized factor loadings in the next table: ")
+
 
 # Interpreted Parameter Estimates
+library(kableExtra) # Only for this table
+
 pe_stand2 <- pe_stand[pe$op=="=~",c(3,4,7)]
 colnames(pe_stand2)[1] <- "Variable"
 pe_stand2 <- merge(pe_stand2,r2,by="Variable")
 pe_stand2 <- pe_stand2[,c(1,2,4,3)]
+pe_stand2$`R-Square` = pe_stand2$`R-Square`*100
+pe_stand2$pvalue <- sapply(pe_stand2$pvalue,pformat)
+## New column
 pe_stand2$sig <- NA
 pe_stand2$sig[which(pe_stand2$pvalue <= 0.05)] <- "Significant"  
 pe_stand2$sig[which(pe_stand2$pvalue > 0.05)] <- "Non-Significant" 
+## New column
 pe_stand2$rel <- NA
-pe_stand2$rel[which(pe_stand2$est.std <= 0.4)] <- "!"
-pe_stand2$rel[which(pe_stand2$est.std > 0.4)] <- "*"
-pe_stand2$rel[which(pe_stand2$est.std > 0.6)] <- "**"
-pe_stand2$rel[which(pe_stand2$est.std > 0.8)] <- "***"
-colnames(pe_stand2) <- c("","Correlation With Factor","Variance Explained By Factor","","Alpha 5%","")
+pe_stand2$rel[which(abs(pe_stand2$est.std) <= 0.4)] <- "!"
+pe_stand2$rel[which(abs(pe_stand2$est.std) > 0.4)] <- "*"
+pe_stand2$rel[which(abs(pe_stand2$est.std) > 0.6)] <- "**"
+pe_stand2$rel[which(abs(pe_stand2$est.std) > 0.8)] <- "***"
+## New column
+pe_stand2$sign <- "As expected."
+## New column
+pe_stand2$keep <- "Ok"
+pe_stand2$keep[which(pe_stand2$pvalue > 0.05 & abs(pe_stand2$est.std) <= 0.4)] <- paste0("Not relevant", footnote_marker_number(5, "latex"))
+pe_stand2$keep[which(pe_stand2$pvalue > 0.05 & abs(pe_stand2$est.std) > 0.4)] <-  paste0("Not concludent", footnote_marker_number(6, "latex"))
+pe_stand2$keep[which(pe_stand2$pvalue <= 0.05 & abs(pe_stand2$est.std) <= 0.4)] <- paste0("Not concludent", footnote_marker_number(7, "latex"))
 
-# Print Interpreted Parameter Estimates
-library(kableExtra)
+## Colnames 
+colnames(pe_stand2) <- c("Variable","Factor Loading","R-Square x 100","P-Value","Significance","Relevance","Sign","Check")
+names(pe_stand2)[2] <- paste0(names(pe_stand2)[2], footnote_marker_number(1, "latex"))
+names(pe_stand2)[3] <- paste0(names(pe_stand2)[3], footnote_marker_number(2, "latex"))
+names(pe_stand2)[5] <- paste0(names(pe_stand2)[5], footnote_marker_number(3, "latex"))
+names(pe_stand2)[6] <- paste0(names(pe_stand2)[6], footnote_marker_number(4, "latex"))
+
 opts <- options(knitr.kable.NA = "")
-x <- kable(pe_stand2,digits=3)
-add_header_above(x,c("Variable","Factor Loading","R-Square","P-Value","Significance","Relevance"))
+x <- kable(pe_stand2,digits=2, escape = F)
+
+## Footnote
+one <- "The completely standardized factor loading can be interpreted as the correlation with the factor. "
+two <- "R-Square x 100 represents the variance explained by the factor in percentage. "
+three <- "5% type I error. "
+four <- "The stars correspond to factor loadings cutoff-values: 0.4, 0.6, 0.8."
+five <-  "The variable is probably not related to factor. If supported by theory, it could be dropped. "
+six <- "If possible, increase sample size. "
+seven <- "Pay special attention to the smaller effect size. Further research would be needed to clarify this relationship. "
+
+number = c(one,two,three,four,five,six,seven)
+footnote(x, number = number)
 options(opts)  # restore global R options
 detach(package:kableExtra)  
 ```  
