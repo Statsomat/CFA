@@ -4,7 +4,7 @@ title: "Correlation and Association"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE, 
-                      warning=FALSE, fig.width=8, booktabs = T, longtable = T) # reload knitr options
+                      warning=FALSE, fig.width=8, booktabs = T, longtable = T, knitr.kable.NA = "") 
 ```
 
 
@@ -705,7 +705,10 @@ if (nrow(stand_residuals(fit,"pos"))>0){
   cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 [@kline]. In these cases, the zero-order covariance relationship between the involved variables is probably underestimated: ")
   both <- rbind(stand_residuals(fit,"pos"),corr_residuals(fit,"pos"))
   both <- both[order(both[,1],both[,2]),]
-  kable(unique(both), row.names=FALSE, col.names=c("",""), caption = "Pairs with Underestimated Covariance")
+  both <- both[complete.cases(both),]
+  both <- unique(both)
+  rownames(both) <- paste("Pair",seq(1:nrow(both)))
+  kable(both, col.names=c("",""), caption = "Pairs with Underestimated Covariance")
 } else {
   cat("There are no variable pairs with standardized residuals which are larger or equal than the considered threshold 2.58 [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 [@kline]. Therefore, no relationships among the variables are substantially underestimated by the model. ")
 }
@@ -714,7 +717,10 @@ if (nrow(stand_residuals(fit,"neg"))>0){
  cat("Following variable pairs have standardized residuals which are smaller or equal than the considered threshold -2.58 [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 [@kline]. In these cases, the zero-order covariance relationship between the involved variables is probably overestimated: ")
   both <- rbind(stand_residuals(fit,"neg"),corr_residuals(fit,"neg"))
   both <- both[order(both[,1],both[,2]),]
-  kable(unique(both), row.names=FALSE, col.names=c("",""), caption = "Pairs with Overestimated Covariance")
+  both <- both[complete.cases(both),]
+  both <- unique(both)
+  rownames(both) <- paste("Pair",seq(1:nrow(both)))
+  kable(both, col.names=c("",""), caption = "Pairs with Overestimated Covariance")
 } else {
   cat("There are no variable pairs with standardized residuals which are smaller or equal than the considered threshold -2.58 [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 [@kline]. Therefore, no relationships among the variables are substantially overestimated by the model. ")
 }
@@ -755,14 +761,10 @@ if (nrow(mi_fl2)>0){
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
+# Factor Loadings
 cat("\n##  Parameter Estimates", fill=TRUE)
-
-# No cross-loadings allowed 
-# Completely Standardized Factor Loadings
-# pe <- parameterEstimates(fit, rsquare = TRUE) # already defined above 
+cat("\n### Factor Loadings", fill=TRUE)
 # fit2 <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", std.ov=TRUE)  # already defined above 
-cat("**Latent Variables**")
-cat("\\newline",fill=TRUE) 
 pe_stand <- standardizedsolution(fit2, type="std.all")
 pvalues_stand <- pe_stand[pe_stand$op=="=~",7]
 estim_stand <- pe_stand[pe_stand$op=="=~",4]
@@ -770,7 +772,7 @@ pe_stand_nonsig_nonrel <- pe_stand[which(pe_stand$pvalue>0.05 && pe_stand$op=="=
 
 # Significant and relevant
 if ((sum(pvalues_stand > 0.05, na.rm = TRUE)==0) && (sum(abs(estim_stand) < 0.4, na.rm = TRUE)==0)) {
-  cat("We remark that the completely standardized factor loadings (section \"Completely Standardized Parameter Estimates\") are all statistically significant at 5% type I error (i.e. p-value <= 0.05). Moreover, in absolute value they are all greater than 0.4. ")
+  cat("We remark that the completely standardized factor loadings (section \"Completely Standardized Parameter Estimates\") are all statistically significant at 5% type I error. Moreover, in absolute value they are all greater than 0.4. ")
   pe_stand_indic = "11"
   
 } else if ((sum(pvalues_stand > 0.05, na.rm = TRUE) > 0)){
@@ -797,14 +799,10 @@ cat("This cutoff-value is considered in some CFA research areas a magnitude that
 cat("We summarize the interpretation of the completely standardized factor loadings in the next table: ")
 
 
-# Interpreted Parameter Estimates
+# Completely standardized factor loadings summary
 library(kableExtra) # Only for this table
-
-pe_stand2 <- pe_stand[pe$op=="=~",c(1,3,4,7)]
+pe_stand2 <- pe_stand[pe_stand$op=="=~",c(1,3,4,7)]
 colnames(pe_stand2)[2] <- "Variable"
-pe_stand2 <- merge(pe_stand2,r2,by="Variable")
-pe_stand2 <- pe_stand2[,c(2,1,3,5,4)]
-pe_stand2$`R-Square` = pe_stand2$`R-Square`*100
 pe_stand2$pvalue <- sapply(pe_stand2$pvalue,pformat)
 ## New column
 pe_stand2$sig <- NA
@@ -820,47 +818,50 @@ pe_stand2$rel[which(abs(pe_stand2$est.std) > 0.8)] <- "***"
 pe_stand2$sign <- "Ok"
 ## New column
 pe_stand2$keep <- "Ok"
-pe_stand2$keep[which(pe_stand2$pvalue > 0.05 & abs(pe_stand2$est.std) <= 0.4)] <- paste0("Not relevant", footnote_marker_number(5, "latex"))
-pe_stand2$keep[which(pe_stand2$pvalue > 0.05 & abs(pe_stand2$est.std) > 0.4)] <-  paste0("Not concludent", footnote_marker_number(6, "latex"))
-pe_stand2$keep[which(pe_stand2$pvalue <= 0.05 & abs(pe_stand2$est.std) <= 0.4)] <- paste0("Not concludent", footnote_marker_number(7, "latex"))
+pe_stand2$keep[which(pe_stand2$pvalue > 0.05 & abs(pe_stand2$est.std) <= 0.4)] <- paste0("Not relevant", footnote_marker_number(4, "latex"))
+pe_stand2$keep[which(pe_stand2$pvalue > 0.05 & abs(pe_stand2$est.std) > 0.4)] <-  paste0("Uncertain", footnote_marker_number(5, "latex"))
+pe_stand2$keep[which(pe_stand2$pvalue <= 0.05 & abs(pe_stand2$est.std) <= 0.4)] <- paste0("Uncertain", footnote_marker_number(6, "latex"))
 
 ## Colnames 
-colnames(pe_stand2) <- c("Latent","Observed","Factor Loading","Variance Explained","P-Value","Significant?","Relevance","Sign","Check")
+colnames(pe_stand2) <- c("Latent Variable","Observed Variable","Factor Loading","P-Value","Significant?","Relevance","Direction","Check")
 names(pe_stand2)[3] <- paste0(names(pe_stand2)[3], footnote_marker_number(1, "latex"))
-names(pe_stand2)[4] <- paste0(names(pe_stand2)[4], footnote_marker_number(2, "latex"))
+names(pe_stand2)[5] <- paste0(names(pe_stand2)[5], footnote_marker_number(2, "latex"))
 names(pe_stand2)[6] <- paste0(names(pe_stand2)[6], footnote_marker_number(3, "latex"))
-names(pe_stand2)[7] <- paste0(names(pe_stand2)[7], footnote_marker_number(4, "latex"))
 
 ## Footnotes
-one <- "The completely standardized factor loading can be interpreted as the correlation with the factor. "
-two <- "The variance explained is the R-Square x 100 expressed in percentage. "
-three <- "5% type I error. "
-four <- "Stars correspond to factor loadings cutoff-values: 0.4, 0.6, 0.8."
-five <-  "The variable is probably not related to factor. If supported by theory, it could be dropped. "
-six <- "If possible, increase sample size and repeat analysis. "
-seven <- "Pay special attention to the smaller effect size. Is it good for you? If not, further analysis would be recommended. "
-number = c(one,two,three,four,five,six,seven)
+if (cross_loadings(pe_stand)){
+  one <- "The completely standardized factor loading can be interpreted as the correlation with the factor. "
+} else {
+  one <- "The completely standardized factor loading can be interpreted as a standardized regression coefficient. "
+} 
+two <- "5% type I error. "
+three <- "Stars correspond to factor loadings cutoff-values: 0.4, 0.6, 0.8."
+four <-  "The variable is probably not related to factor. "
+five <- "If possible, increase sample size and repeat analysis. "
+six <- "Significant but smaller effect size. "
+number = c(one,two,three,four,five,six)
 
 ## Kable
 opts <- options(knitr.kable.NA = "")
 x <- kable(pe_stand2, digits=2, escape = F, linesep = '', caption="Check Completely Standardized Factor Loadings", longtable = T)
 footnote(x, number = number) %>%
-  kable_styling(x, position = "center", latex_options = c("hold_position", "repeat_header"))
-
-options(opts)  # restore global R options
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("hold_position", "repeat_header"))
 ```  
 
+
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-# Original Parameter Estimates
-cat("Next, we inspect the unstandardized factor loadings, contained within the section \"Model Fit Summary\". ")
+# Table Check Unstandardized Factor Loadings
+
+pe <- parameterEstimates(fit, rsquare = TRUE)
 pvalues_loadings <- pe[pe$op=="=~",]$pvalue
 
-# Significant and relevant
+# Text 
+cat("Next, we inspect the unstandardized factor loadings (section \"Model Fit Summary\"). ")
 if ((sum(pvalues_loadings > 0.05, na.rm = TRUE)==0)) {
   cat("We remark that the unstandardized factor loadings are all statistically significant at 5% type I error. ")
   pe_unstand_indic = TRUE
   if (pe_stand_indic =="11" || pe_stand_indic =="10"){
-    cat("Therefore, the significance test results for standardized and unstandardized factor loadings coincide. ")
+    cat("Therefore, the significance test results for standardized and unstandardized factor loadings coincide (for non-marker variables). ")
   }
 } else {
   cat("We remark that there exist unstandardized factor loadings which are not statistically significant at 5% type I error. ")
@@ -870,8 +871,9 @@ if ((sum(pvalues_loadings > 0.05, na.rm = TRUE)==0)) {
   }
 }
 
-cat("We summarize the unstandardized factor loadings in the next table: ")
+cat("We summarize the interpretation of the unstandardized factor loadings in the next table(s): ")
 
+# Table 
 library(kableExtra) # Only for this table
 pe2 <- pe[pe$op=="=~",c(1,3,4,7)]
 pe2$pvalue <- sapply(pe2$pvalue,pformat)
@@ -882,104 +884,145 @@ pe2$sig[which(pe2$pvalue <= 0.05)] <- "Yes"
 pe2$sig[which(pe2$pvalue > 0.05)] <- "No" 
 ## New column
 pe2$sign <- "Ok"
-
 ## Colnames
-colnames(pe2) <- c("Latent","Observed","Factor Loading","P-Value","Significant?","Sign")
+colnames(pe2) <- c("Latent Variable","Observed Variable","Factor Loading","P-Value","Significant?","Direction")
 names(pe2)[5] <- paste0(names(pe2)[5], footnote_marker_number(1, "latex"))
-
 ## Footnotes
-number2 = c(three)
-
+number = "5% type I error. "
 ## Kable
 opts <- options(knitr.kable.NA = "")
-x2 <- kable(pe2, digits=2, escape = F, linesep = '', caption="Check Unstandardized Factor Loadings", longtable = T)
-footnote(x2, number = number2) %>%
-  kable_styling(x2, position = "center",latex_options = c("hold_position", "repeat_header"))
-options(opts)  # restore global R options
+x <- kable(pe2, digits=2, escape = F, linesep = '', caption="Check Unstandardized Factor Loadings", longtable = T)
+footnote(x, number = number) %>%
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("hold_position", "repeat_header"))
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=pe_unstand_indic}
-# Story for Original Parameter Estimates
-cat("We summarize the interpretation of the unstandardized factor loadings in the next table: ")
-text <-  function(cols){
+# Table Interpretation of Unstandardized Factor Loadings
+text <-  function(df, cols){
+  x <- df[df$op=="=~",3]
+  duplicates <- which(duplicated(x))
   if (is.na(cols[4])){
     paste(cols[2],"is marker variable for",cols[1])
   } else if (cols[3]>=0){
-    paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit increase in the",cols[2])
+    if (cols[2] %in% df[duplicates,3]){
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit increase in the",cols[2],"while the other factor(s) are held constant.")
+    } else {
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit increase in the",cols[2])
+    }
   } else {
-    paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit decrease in the",cols[2])
+    if (cols[2] %in% df[duplicates,3]){
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit decrease in the",cols[2],"while the other factor(s) are held constant.")
+    } else {
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit decrease in the",cols[2])
+    }
   }
 }
-story <- apply(pe2, 1, text)
+opts <- options(knitr.kable.NA = "")
+story <- apply(pe2, 1, function(cols) text(pe,cols))
 knitr::kable(story, col.names="Interpretation of Unstandardized Factor Loadings",
-             caption="Interpretation of Unstandardized Factor Loadings", linesep = '') %>%
+             caption="Interpretation of Unstandardized Factor Loadings", linesep = '', longtable = T) %>%
   kable_styling(position = "center", latex_options = c("hold_position", "repeat_header"))
 ```  
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-# Extract completely standardized covariances 
-covariances_stand <- pe_stand[pe$op=="~~",]
+# Factor covariances (completely stand.)
+covariances_stand <- pe_stand[pe_stand$op=="~~",]
 covariances_stand <- covariances_stand[covariances_stand$lhs != covariances_stand$rhs,]
 maxmin <- c(max(covariances_stand$est.std),min(covariances_stand$est.std))
 which <- which.max(abs(maxmin))
 max_corr <- maxmin[which]
 
 # Text 
-cat("**Covariances**")
-cat("\\newline",fill=TRUE) 
-if (sum(abs(covariances_stand$est.std) > 0.6)==0){
-  cat("The largest estimated factor intercorrelation within the section \"Completely Standardized Parameter Estimates\" is",round(max_corr,2),"which we regard as a proof of reasonable discriminant validity. ")
+cat("\n### Factor Covariances", fill=TRUE)
+cat("As noted by [@brown], \"the interpretability of the size and statistical significance of factor intercorrelations depends on the specific research context.\"")
+if (sum(abs(covariances_stand$est.std) > 0.75)==0){
+  intercorr_indic = 0
+  cat("Though, the largest estimated factor intercorrelation within the section \"Completely Standardized Parameter Estimates\" is",round(max_corr,2),"which we regard as a proof of reasonable discriminant validity. ")
 } else {
-  cat("Large or statistically significant factor covariances are questionable and provide evidence of poor discriminant validity. There is evidence to question the distinctness of the following factors, since the correlation approaches in absolute value 1.0: ")
-  kable(covariances_stand[abs(covariances_stand$est.std)>0.6,])
+  cat("Still, large or statistically significant factor covariances are questionable and provide evidence of poor discriminant validity. There is evidence to question the distinctness of the following factors, since their correlation approaches in absolute value 1.0: ")
+  intercorr_indic = 1
+  knittr::kable(covariances_stand[abs(covariances_stand$est.std)>0.75,])
 }
-cat("Nevertheless, as noted by [@brown], \"the interpretability of the size and statistical significance of factor intercorrelations depends on the specific research context.\" So, please consider also cutoff-values from your particular research area when interpreting the factor intercorrelations. ")
-```  
-
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
-cat("**Intercepts**")
-cat("\\newline",fill=TRUE) 
-cat("Because the data has missing values, a meanstructure i.e. the intercepts of the observed variables are added to the model. The means of the latent factors are fixed to zero. The meanstructure is visible in case of the unstandardized parameter estimates. ")
-# No cross-loadings
-# Cross-loadings 
 ```  
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-cat("**Variances**")
-cat("\\newline",fill=TRUE) 
-cat("Error variances are inversely related to their corresponding factor loadings, i.e. the more variance is explained by a factor, the smaller the error variance is. Completely standardized estimates for error variances represent proportions of unexplained variance. ")
+# Factor Reliability (completely stand.)
+cat("\n### Factor Reliability", fill=TRUE)
 ```  
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("\n### Error Variances", fill=TRUE)
+variances <- pe_stand[pe_stand$op=="~~",]
+variances <- variances[variances$lhs == variances$rhs,]
+r2 <- pe[pe$op=="r2",c(1,4)]
+variances <- merge(variances,r2,by="lhs")
+variances$pvalue <- sapply(variances$pvalue,pformat)
+variances$est.std <- round(variances$est.std,2)
+## New column
+variances$sig <- NA
+variances$sig[which(variances$pvalue <= 0.05)] <- "Yes"  
+variances$sig[which(variances$pvalue > 0.05)] <- "No" 
+variances <- variances[,c(1,4,10,7,11)]
+one <- "Can be interpreted as proportion of unexplained variance by the latent factor(s) (%). "
+three <- "5% type I error. Typically significant since a large portion of variance is not explained by the latent variable. "
+if (cross_loadings(pe_stand)){
+  two <- "Corresponds to the squared factor loading. Can be interpreted as proportion of explained variance by the latent factor(s) (%)."
+} else {
+    two <- "Can be interpreted as proportion of explained variance by the latent factor(s) (%)."
+}
+footnote <- c(one,two,three)
+colnames(variances) <- c("Observed Variable","Error Variance","Communality","P-Value","Significant Error Variance?")
+names(variances)[2] <- paste0(names(variances)[2], footnote_marker_number(1, "latex"))
+names(variances)[3] <- paste0(names(variances)[3], footnote_marker_number(2, "latex"))
+names(variances)[5] <- paste0(names(variances)[5], footnote_marker_number(3, "latex"))
+
+# Kable
+opts <- options(knitr.kable.NA = "")
+knitr::kable(variances, digits=2, escape = F, linesep = '', 
+              caption="Completely Standardized Error Variances and Communality", longtable = T, align="l")  %>%
+  footnote(number = footnote) %>%
+  kable_styling(x, position = "center", latex_options = c("hold_position", "repeat_header"))
+```  
+
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("\n### Error Covariances", fill=TRUE)
+```  
+
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+cat("\n### Intercepts", fill=TRUE)
+cat("In case of missing values and estimation via FIML, a meanstructure i.e. the intercepts of the observed variables are added to the model. The means of the latent factors are fixed to zero. Therefore, the estimated intercepts within the section \"Model Fit Summary\" are just the means of the observed variables. ")
+```  
+
+
+```{r, results="asis", dev="cairo_pdf", eval=FALSE}
 cat("\n## Final Summary", fill=TRUE)
-cat("Please reconsider your data and the theory behind. Only if supported by the theory and research behind the data, you could try to update the model by a line recommended in the section \"Modification Indices \" and repeat the Confirmatory Factor Analysis. Updating by adding a line means adding parameters to the model. The goodness-of-fit will be probably increased. ", fill=TRUE)
+
+cat("Please reconsider your data and the theory behind. ")
+
+cat("\n### Eliminations", fill=TRUE)
+cat("The variable is probably not related to factor. If also supported by theory, it could be dropped. ")
+cat("Modificate and ideally replicate the CFA in an independent sample. ")
+cat("Significant but smaller effect size. Is it acceptable for you? If not, further analysis would be recommended. ")
 cat("Only if supported by theory, you could try to collapse the factors. ")
+
+
+cat("\n### Addings", fill=TRUE)
+cat("Only if supported by the theory and research behind the data, you could try to update the model by a line recommended in the section \"Modification Indices \". Updating by adding a line means adding parameters to the model. The goodness-of-fit will be probably increased. ", fill=TRUE)
+cat("Modificate and ideally replicate the CFA in an independent sample. ")
+
 ```  
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("\n# Path Diagram", fill=TRUE)
-semPaths(fit)
+semPaths(fit, what="std", intercepts = FALSE)
 ```    
    
      
-```{r, results="asis", eval=eval2}
-
-tryCatch({
-
-# Title 
-cat("\n# R Statistical Methods", fill=TRUE)
-cat("The statistical analysis was done using R [@stats]. ", fill=TRUE)
-cat("In our interpretation, we use the term *variables* for *indicators* or *items*. ")
-cat("Our interpretation is based mainly on [@brown] and [@kline] and afferent articles. ")   
-}, error=function(e) {cat("")}
-
-)
-
-```
-
 
 

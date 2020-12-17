@@ -122,5 +122,12 @@ corr_residuals <- function(x,sign){
   return(dimnames2)
 }
 
+# Cross-loadings existent?
+cross_loadings <- function(df){
+  if (sum(duplicated(df[df$op=="=~",3])) == 0){
+    return(TRUE) 
+  } else {
+    return(FALSE)}
+}
 
 
