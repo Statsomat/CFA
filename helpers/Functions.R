@@ -124,7 +124,7 @@ corr_residuals <- function(x,sign){
   return(dimnames2)
 }
 
-# Cross-loadings existent?
+# No Cross-loadings is TRUE
 cross_loadings <- function(df){
   if (sum(duplicated(df[df$op=="=~",3])) == 0){
     return(TRUE) 
@@ -143,3 +143,36 @@ error_covariances <- function(df,fit){
   } else {
     return(FALSE)}
 }
+
+
+# Table Interpretation of Unstandardized Factor Loadings
+text <-  function(df, cols){
+  x <- df[df$op=="=~",3]
+  duplicates <- which(duplicated(x))
+  if (is.na(cols[4])){
+    paste(cols[2],"is marker variable for",cols[1])
+  } else if (cols[3]>=0){
+    if (cols[2] %in% df[duplicates,3]){
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit increase in the",cols[2],"while the other factor(s) are held constant.")
+    } else {
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit increase in the",cols[2])
+    }
+  } else {
+    if (cols[2] %in% df[duplicates,3]){
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit decrease in the",cols[2],"while the other factor(s) are held constant.")
+    } else {
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit decrease in the",cols[2])
+    }
+  }
+}
+
+
+# Cross-loadings rowwise 
+cross_loadings_row <- function(df,cols){
+  if (cols[2] %in% df[which(duplicated(df$Variable)),2]){
+    paste("cross")
+  } else {
+    paste("x") }
+  
+}
+

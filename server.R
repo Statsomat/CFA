@@ -253,7 +253,7 @@ shinyServer(function(input, output, session) {
     
     error=function(e) {
       # Report not available 
-      showNotification("Something went wrong. In most cases, this is due to severe problems within your data and/or model syntax. 
+      showNotification("Something went wrong. In most cases, this is due to severe problems with your data and/or model syntax. 
                        Please try again. ",duration=20)
       }
     )
