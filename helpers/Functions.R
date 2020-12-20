@@ -92,7 +92,7 @@ cutsrmr <- function(n){
   }
 }
 
-# Standardized cov residuals 
+# Standardized cov residuals larger than 2.58
 stand_residuals <- function(x,sign){
   covstd <- resid(x, type="standardized")$cov # Std residuals on cov
   if (sign=="neg"){
@@ -104,10 +104,11 @@ stand_residuals <- function(x,sign){
   m <- m[order(m$row),]
   dimnames <- x@Model@dimNames[[1]][1][[1]]
   dimnames2 <- data.frame(dimnames[m[,1]],dimnames[m[,2]])
+  dimnames2 <- dimnames2[complete.cases(dimnames2),]
   return(dimnames2)
 }
 
-# Corr residuals 
+# Corr residuals larger than 0.1
 corr_residuals <- function(x,sign){
   covstd <- resid(x, "cor")$cov # Residuals 
   if (sign=="neg"){
@@ -119,6 +120,7 @@ corr_residuals <- function(x,sign){
   m <- m[order(m$row),]
   dimnames <- x@Model@dimNames[[1]][1][[1]]
   dimnames2 <- data.frame(dimnames[m[,1]],dimnames[m[,2]])
+  dimnames2 <- dimnames2[complete.cases(dimnames2),]
   return(dimnames2)
 }
 
@@ -130,4 +132,14 @@ cross_loadings <- function(df){
     return(FALSE)}
 }
 
-
+# Error covariances existent? 
+error_covariances <- function(df,fit){
+  covariances_stand <- df[df$op=="~~",]
+  covariances_stand <- covariances_stand[which(covariances_stand$lhs != covariances_stand$rhs),]
+  ov <- fit@Model@dimNames[[4]][[1]]
+  covariances_error <- covariances_stand[which(covariances_stand$lhs %in% ov),]
+  if (nrow(covariances_error)>0){
+    return(TRUE) 
+  } else {
+    return(FALSE)}
+}

@@ -13,7 +13,7 @@ shinyUI(fluidPage(
                     position: fixed;
                     top: 10px;
                     left: calc(50% - 400px);;
-                    width: 800px;
+                    width: 850px;
                     /* Make sure it draws above all Bootstrap components */
                     z-index: 2000;
                     background-color: #ff9900;

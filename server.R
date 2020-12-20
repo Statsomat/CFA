@@ -253,7 +253,8 @@ shinyServer(function(input, output, session) {
     
     error=function(e) {
       # Report not available 
-      showNotification("Error: The report cannot be generated for this dataset and model syntax. Please revise your data. ",duration=20)
+      showNotification("Something went wrong. In most cases, this is due to severe problems within your data and/or model syntax. 
+                       Please try again. ",duration=20)
       }
     )
     
