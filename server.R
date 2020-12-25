@@ -1,15 +1,18 @@
-options(shiny.maxRequestSize = 5*1024^2)
-options(shiny.sanitize.errors = TRUE)
-
-library(shiny)
-library(rmarkdown)
-library(data.table)
-library(readr)
-
-source("helpers/Functions.R")
-
 # Define server logic 
 shinyServer(function(input, output, session) {
+  
+  # Reload app if disconnected
+  observeEvent(input$disconnect, {
+    session$close()
+  })
+  
+  # Reload app button
+  observeEvent(input$reload,session$reload())
+  
+  session_id <- reactive({
+    url_params <- parseQueryString(session$clientData$url_search)
+    url_params[["session_id"]]
+  })
   
   
   # Upload data

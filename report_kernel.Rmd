@@ -4,7 +4,7 @@ title: "Correlation and Association"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE, 
-                      warning=FALSE, fig.width=8, booktabs = T, longtable = T, knitr.kable.NA = "") 
+                      warning=FALSE, fig.width=8, booktabs = T, longtable = T, knitr.kable.NA = "",  knitr.kable.linesep = '', longtable=T) 
 ```
 
 
@@ -22,6 +22,8 @@ library(fastDummies) # make dummies
 library(lavaan)
 library(semPlot)
 library(corrplot)
+library(kableExtra) 
+library(semTools)
 
 eval <- FALSE
 tryCatch({
@@ -96,7 +98,8 @@ eval <- TRUE
 cat("\n# Basic Information", fill=TRUE)
 cat("Automatic statistics for the file:", fill=TRUE)
 dataname <- params$filename[1]
-kable(dataname, col.names = "File")
+knitr::kable(dataname, col.names = "File", linesep = '', longtable=T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 
 cat("Your selection for the encoding:", fill=TRUE)
 if (params$fencoding=="unknown"){
@@ -129,7 +132,8 @@ if (exists("df_num")){
   if (ncol(df_num)>0){
     if (sum(rateunique_df )>0){
       cat(sum(rateunique_df==TRUE),fill=TRUE)
-      kable(cols_continuous, col.names = "Variables considered continuous")
+      knitr::kable(cols_continuous, col.names = "Variables considered continuous", linesep = '', longtable=T) %>%
+        kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
     }
   } else {
     
@@ -143,7 +147,8 @@ if (exists("df_num")){
   if (ncol(df_num)>0){
     if (sum(rateunique_df==FALSE)>0){
       cat(sum(rateunique_df==FALSE),fill=TRUE)
-      kable(cols_ordinal, col.names = "Numerical variables considered binary or ordinal")
+      knitr::kable(cols_ordinal, col.names = "Numerical variables considered binary or ordinal", linesep = '', longtable=T) %>%
+        kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
     } else {
     
     cat("0",fill=TRUE)
@@ -155,7 +160,8 @@ cat("Character variables considered binary: ", fill=TRUE)
 if (exists("cols_binary")){
   if (sum(cols_binary)>0){
     cat(sum(cols_binary),fill=TRUE)
-    kable(names(which(cols_binary==TRUE)), col.names = "Character variables considered binary")
+    knitr::kable(names(which(cols_binary==TRUE)), col.names = "Character variables considered binary", linesep = '', longtable=T) %>%
+      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
   } else {
     cat("0",fill=TRUE)
     cat("\\newline",fill=TRUE) }
@@ -166,7 +172,8 @@ cat("Character variables considered nominal and transformed to binary: ", fill=T
 if (exists("cols_dummy")){
   if (sum(cols_dummy)>0){
     cat(sum(cols_dummy),fill=TRUE)
-    kable(colnames(dummies2), col.names = "Binary dummies for nominal variables")
+    knitr::kable(colnames(dummies2), col.names = "Binary dummies for nominal variables", linesep = '', longtable=T) %>%
+      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
   } else {
     cat("0",fill=TRUE)
     cat("\\newline",fill=TRUE) }
@@ -179,7 +186,8 @@ if (exists("cols_one")){
     cat("Columns with just one unique value (missings omitted) which are not considered in further computations: ")
     cat(sum(cols_one) ,fill=TRUE)
     cols <- names(which(cols_one==1))
-    kable(cols, col.names = "Columns not considered")
+    kable(cols, col.names = "Columns not considered", linesep = '', longtable=T) %>%
+      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
   }
 }
 
@@ -189,7 +197,8 @@ if (exists("cols_catlarge")){
     cat("Character columns with more than 10 unique values which are not considered in further computations: ")
     cat(sum(cols_catlarge),fill=TRUE)
     cols <- names(which(cols_catlarge==1))
-    kable(cols, col.names = "Columns not considered")
+    knitr::kable(cols, col.names = "Columns not considered", linesep = '', longtable=T) %>%
+      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
   }
 }
 
@@ -207,7 +216,8 @@ complete_rate <- sapply(df_work, function(col) 1-(sum(is.na(col)) / dim(df)[1]))
 if (length(which(complete_rate < 0.5)) != 0L){
   cat("**Warning: These variables have more than 50% missing values:**")
   miss_var <- names(which(complete_rate < 0.5)) 
-  kable(miss_var, col.names = "Variable")
+  knitr::kable(miss_var, col.names = "Variable", linesep = '', longtable=T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 }
 
 
@@ -233,6 +243,10 @@ eval2 <- FALSE
 tryCatch({
   # No std of ov, default std of lv 
   fit <- cfa(params$model, data=df_work, missing="fiml", estimator="ML") 
+  fit2 <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", std.ov=TRUE) 
+  pe <- parameterEstimates(fit, rsquare = TRUE)
+  pe_stand <- standardizedsolution(fit2, type="std.all")
+
   eval2 <- TRUE
 
 }, error=function(e) {
@@ -255,7 +269,8 @@ cat("\n# Model Syntax", fill=TRUE)
 info <- inspect(fit, what="list")
 info <- info[,c(2,3,4,5,8)]
 cat("The following table describes the applied model equations in lavaan model syntax, either as entered by you in the text area (denoted by User=1) or established internally (User=0). The last column numbers the free parameters which are estimated.")
-kable(info, col.names=c("Left hand side","Operator","Right hand side","User","Free parameter"))
+knitr::kable(info, col.names=c("Left hand side","Operator","Right hand side","User","Free parameter"), linesep = '', longtable=T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```               
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
@@ -274,7 +289,7 @@ cat("\n## Model Fit Summary", fill=TRUE)
 
 ```{r, dev="cairo_pdf", eval=eval2}
 
-eval3<- FALSE
+eval3 <- FALSE
 tryCatch({
   
   summary(fit, fit.measures=TRUE)
@@ -295,17 +310,37 @@ cat("\n## Completely Standardized Parameter Estimates", fill=TRUE)
 ```  
 
 ```{r, dev="cairo_pdf", eval=eval3}
-fit2 <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", std.ov=TRUE) 
 standardizedSolution(fit2, type="std.all", output="text")
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
 cat("\n## Communality", fill=TRUE)
-pe <- parameterEstimates(fit, rsquare = TRUE)
 r2 <- pe[pe$op=="r2",c(1,4)]
 colnames(r2) <- c("Variable","Communality")
 rownames(r2) <- NULL
-kable(r2,caption="R-Square",digits=2, row.names = NA)
+knitr::kable(r2,caption="Communality",digits=2, row.names = NA, linesep = '', longtable=T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+```  
+
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+cat("\n## Factor Discriminant Validity", fill=TRUE)
+discr <- discriminantVal(fit, cutoff = 0.85, merge = FALSE, level = 0.95, data=df_work)
+discr <- discr[,c(1:4,11:13)]
+discr$`Pr(>Chisq)` <- sapply(discr$`Pr(>Chisq)`,pformat)
+knitr::kable(discr,caption="Factor Discriminant Validity Test at Cutoff 0.85",digits=3, row.names = NA, linesep = '', 
+             col.names = c("","","","Factor Correlation","Chisq diff","Df diff","P-Value")) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+```  
+
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+cat("\n## Factor Reliability", fill=TRUE)
+rel <- reliability(fit,return.total = TRUE, dropSingle = FALSE, omit.imps = c("no.conv", "no.se", "no.npd"))
+rel <- rel[3:5,]
+rownames(rel) <- c("Omega (Bentler)","Omega (McDonald)","AVE")
+opts <- options(knitr.kable.NA = "Not provided in case of cross-loadings")
+knitr::kable(rel,caption="Factor Reliability",digits=2, linesep = '', longtable=T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+options(opts)
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
@@ -364,7 +399,8 @@ mi_corr <- modindices(fit, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=
 mi_corr <- mi_corr[,c(-6,-8)]
 rownames(mi_corr) <- NULL
 if (nrow(mi_corr)>0){
-  kable(mi_corr,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Modification Indices With Respect To (Residual) Correlation")
+  knitr::kable(mi_corr,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Modification Indices With Respect To (Residual) Correlation",linesep = '', longtable=T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 }
 
 
@@ -373,7 +409,8 @@ mi_fl <- modindices(fit, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TR
 mi_fl <- mi_fl[,c(-6,-8)]
 rownames(mi_fl) <- NULL
 if (nrow(mi_fl)>0){
-  kable(mi_fl,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Modification Indices With Respect To Factor Loadings")
+  knitr::kable(mi_fl,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Modification Indices With Respect To Factor Loadings",linesep = '', longtable=T)  %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 }
 
 ```
@@ -623,8 +660,7 @@ if (rmseanull < 0.158){
   
 } else {  #(rmseanull >= 0.158)
   
-  cat("In the summary of goodness of fit summary we consider the model fit indices: Chi-square, RMSEA, SRMR, TLI and by case also CFI. ")
-  
+ ############################################################ 
   
   if (tli>0){
 
@@ -715,7 +751,8 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
   both <- both[complete.cases(both),]
   both <- unique(both)
   rownames(both) <- paste("Pair",seq(1:nrow(both)))
-  kable(both, col.names=c("Pair(s)",""), caption = "Pairs with Underestimated Covariance")
+  knitr::kable(both, col.names=c("Pair(s)",""), caption = "Pairs with Underestimated Covariance",linesep = '', longtable=T)  %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else {
   cat("There are no variable pairs with standardized residuals which are larger or equal than the considered threshold 2.58 [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 [@kline]. Therefore, no relationships among the variables are substantially underestimated by the model. ")
 }
@@ -727,7 +764,8 @@ if (nrow(stand_residuals(fit,"neg"))>0 || nrow(corr_residuals(fit,"neg"))>0){
   both <- both[complete.cases(both),]
   both <- unique(both)
   rownames(both) <- paste("Pair",seq(1:nrow(both)))
-  kable(both, col.names=c("Pair(s)",""), caption = "Pairs with Overestimated Covariance")
+  knitr::kable(both, col.names=c("Pair(s)",""), caption = "Pairs with Overestimated Covariance",linesep = '', longtable=T)  %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else {
   cat("There are no variable pairs with standardized residuals which are smaller or equal than the considered threshold -2.58 [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 [@kline]. Therefore, no relationships among the variables are substantially overestimated by the model. ")
 }
@@ -743,16 +781,19 @@ cat("\n## Modification Indices", fill=TRUE)
 cat("In the interpretation of the modification indices we rely mostly on [@brown] and [@mi]. We cite from [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ")
 
 cat("\\newline",fill=TRUE)
-cat("We consider only modification indices greater or equal than 3.84. These represent modification indices which are statistically significant at 5% type I error. Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for (residual) correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\".", fill=TRUE)
+cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for (residual) correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\".", fill=TRUE)
 
 # MI for correlation
 mi_corr <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="~~")
 mi_corr2 <- mi_corr[mi_corr$decision=="*epc:m*",c(-6,-8)]
 if (nrow(mi_corr2)>0){
-  kable(mi_corr2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Significant and Relevant MIs With Respect To (Residual) Correlations")
+  cat("\\newline",fill=TRUE)
+  cat("Following modification indices with respect to (residual) correlations fulfill these requirements:")
+  knitr::kable(mi_corr2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Significant and Relevant MIs With Respect To (Residual) Correlations", linesep = '', longtable=T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else {
   cat("\\newline",fill=TRUE)
-  cat("We remark, that these conditions are not fulfilled by any of the modification indices of the table xxx. Therefore, there are no significant and relevant modification indices with respect to (residual) correlations. ")
+  cat("We remark that these conditions are not fulfilled for modification indices with respect to (residual) correlations. Therefore, there exist no significant and relevant modification indices with respect to (residual) correlations. ")
   }
 
 
@@ -760,17 +801,19 @@ if (nrow(mi_corr2)>0){
 mi_fl <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="=~", delta=0.4)
 mi_fl2 <- mi_fl[mi_fl$decision=="*epc:m*",c(-6,-8)]
 if (nrow(mi_fl2)>0){
-  kable(mi_fl2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Significant and Relevant MIs With Respect To Factor Loadings")
+  cat("\\newline",fill=TRUE)
+  cat("Following modification indices with respect to factor loadings fulfill these requirements:")
+  knitr::kable(mi_fl2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), 
+        digits=3, caption="Significant and Relevant MIs With Respect To Factor Loadings",linesep = '', longtable=T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else {
   cat("\\newline",fill=TRUE)
-  cat("We remark, that these conditions are not fulfilled by any of the modification indices of the table xxx. Therefore, there are no significant and relevant modification indices with respect to factor loadings. ")
+  cat("We remark that these conditions are not fulfilled for modification indices with respect to factor loadings. Therefore, there exist no significant and relevant modification indices with respect to factor loadings. ")
   }
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-# Define standardized parameter estimates 
-# fit2 <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", std.ov=TRUE)  # already defined above 
-pe_stand <- standardizedsolution(fit2, type="std.all")
+# Define Indicators for Cross-Loadings and Residual Errors 
 
 # Define indicator for the existence of cross-loadings
 if (cross_loadings(pe_stand)){
@@ -825,7 +868,6 @@ cat("We summarize the interpretation of the completely standardized factor loadi
 
 
 # Completely standardized factor loadings summary
-library(kableExtra) # Only for this table
 pe_stand2 <- pe_stand[pe_stand$op=="=~",c(1,3,4,7)]
 colnames(pe_stand2)[2] <- "Variable"
 pe_stand2$pvalue <- sapply(pe_stand2$pvalue,pformat)
@@ -877,9 +919,9 @@ number = c(one,two,three,four,five,six)
 
 ## Kable
 opts <- options(knitr.kable.NA = "")
-x <- kable(pe_stand2, digits=2, escape = F, linesep = '', caption="Check Completely Standardized Factor Loadings", longtable = T)
+x <- knitr::kable(pe_stand2, digits=2, escape = F, linesep = '', caption="Check Completely Standardized Factor Loadings", longtable = T)
 footnote(x, number = number) %>%
-  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("hold_position", "repeat_header"))
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```  
 
 
@@ -908,7 +950,6 @@ if ((sum(pvalues_loadings > 0.05, na.rm = TRUE)==0)) {
 cat("We summarize the interpretation of the unstandardized factor loadings in the next table(s): ")
 
 # Table 
-library(kableExtra) # Only for this table
 pe2 <- pe[pe$op=="=~",c(1,3,4,7)]
 pe2$pvalue <- sapply(pe2$pvalue,pformat)
 pe2$est <- round(pe2$est,2)
@@ -925,9 +966,9 @@ names(pe2)[5] <- paste0(names(pe2)[5], footnote_marker_number(1, "latex"))
 number = "5% type I error. "
 ## Kable
 opts <- options(knitr.kable.NA = "")
-x <- kable(pe2, digits=2, escape = F, linesep = '', caption="Check Unstandardized Factor Loadings", longtable = T)
+x <- knitr::kable(pe2, digits=2, escape = F, linesep = '', caption="Check Unstandardized Factor Loadings", longtable = T)
 footnote(x, number = number) %>%
-  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("hold_position", "repeat_header"))
+  kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=pe_unstand_indic}
@@ -936,7 +977,7 @@ opts <- options(knitr.kable.NA = "")
 story <- apply(pe2, 1, function(cols) text(pe,cols))
 knitr::kable(story, col.names="Interpretation of Unstandardized Factor Loadings",
              caption="Interpretation of Unstandardized Factor Loadings", linesep = '', longtable = T) %>%
-  kable_styling(position = "center", latex_options = c("hold_position", "repeat_header"))
+  kable_styling(position = "center", latex_options = c("HOLD_position","repeat_header"))
 ```  
 
 
@@ -950,29 +991,25 @@ maxmin <- c(max(covariances_stand$est.std),min(covariances_stand$est.std))
 which <- which.max(abs(maxmin))
 max_corr <- maxmin[which]
 factorcov <- covariances_stand[covariances_stand$lhs %in% factors,]
-factorcov <- factorcov[abs(factorcov$est.std)>0.75,]
+factorcov <- factorcov[abs(factorcov$est.std)>0.85,]
 factorcov <- factorcov[,c(1,2,3,4)]
 
+factornonsig <- discr[which(discr$`Pr(>Chisq)`>0.05),]
+
 # Text 
-cat("\n### Factor Correlations", fill=TRUE)
+cat("\n### Factor Discriminant Validity", fill=TRUE)
 cat("As noted by [@brown], \"the interpretability of the size and statistical significance of factor intercorrelations depends on the specific research context. \"")
-if (sum(abs(covariances_stand$est.std) > 0.75)==0){
+if (sum(discr$`Pr(>Chisq)` > 0.05)==0){
   intercorr_indic = 0
-  cat("Though, the largest estimated factor intercorrelation within the section \"Completely Standardized Parameter Estimates\" is",round(max_corr,2),"which we regard as a proof of a reasonable discriminant validity. ")
+  cat(" Though, the largest estimated factor intercorrelation within the section \"Completely Standardized Parameter Estimates\" is",round(max_corr,2)," which we regard as a proof of a reasonable discriminant validity. Moreover, all the statistical tests for factor discriminant validity are statistically significant at 5% type I error. ")
 } else {
-  cat("Still, large or statistically significant factor covariances are questionable and provide evidence of poor discriminant validity. There is evidence to question the distinctness of the following factors, since their correlation approaches in absolute value 1.0: ")
+  cat(" Still, large or statistically significant factor covariances resp. correlations are questionable and provide evidence of poor discriminant validity. There is evidence to question the distinctness of the following factor pair(s), since their correlation approaches in absolute value 1.0 and their test of discriminant validity is non-statistically significant at 5% type I error: ")
   intercorr_indic = 1
-  rownames(factorcov) <- paste("Pair",seq(1:nrow(factorcov)))
-  knitr::kable(factorcov,col.names = c("","","","Factor Correlation"), linesep = '',digits=2,
-               caption="Factor Correlations")  %>%
-    kable_styling(position = "center", latex_options = c("hold_position", "repeat_header"))
+  rownames(factornonsig) <- paste("Pair",seq(1:nrow(factornonsig)))
+  knitr::kable(factornonsig ,col.names = c("","","","Factor Correlation","Chisq diff","Df diff","P-Value"), linesep = '',digits=3,
+               caption="Factor with Poor Discriminant Validity")  %>%
+    kable_styling(position = "center", latex_options = c("HOLD_position","repeat_header"))
 }
-```  
-
-
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
-# Factor Reliability (completely stand.)
-cat("\n### Factor Reliability", fill=TRUE)
 ```  
 
 
@@ -1015,7 +1052,7 @@ opts <- options(knitr.kable.NA = "")
 knitr::kable(variances, digits=2, escape = F, linesep = '', 
               caption="Completely Standardized Error Variances and Communality", longtable = T, align="l")  %>%
   footnote(number = footnote) %>%
-  kable_styling(position = "center", latex_options = c("hold_position", "repeat_header"))
+  kable_styling(position = "center", latex_options = c("HOLD_position","repeat_header"))
 ```  
 
 
@@ -1034,7 +1071,7 @@ if (nrow(covariances_error)>0){
   rownames(covariances_error) <- paste("Pair",seq(1:nrow(covariances_error)))
   knitr::kable(covariances_error,col.names = c("","","","Error Covariance","P-Value"), linesep = '',digits=2,
                caption="Error Correlations")  %>%
-    kable_styling(position = "center", latex_options = c("hold_position", "repeat_header"))
+    kable_styling(position = "center", latex_options = c("HOLD_position","repeat_header"))
 } else {
   cat("We remark, that all error covariances have completely standardized parameter estimates above 0.1 (in absolute value) and which are statistically significant at 5% type I error. Therefore, we assume that they are well defined in the model. ")
 }
@@ -1045,6 +1082,13 @@ if (nrow(covariances_error)>0){
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("\n### Intercepts", fill=TRUE)
 cat("In case of missing values and estimation via FIML, a meanstructure i.e. the intercepts of the observed variables are added to the model. The means of the latent factors are fixed to zero. Therefore, the estimated intercepts within the section \"Model Fit Summary\" are just the means of the observed variables. ")
+```  
+
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+# Factor Reliability (completely stand.)
+cat("\n## Factor Reliability", fill=TRUE)
+cat("We provide the omega measures of factor reliability given by Bentler (Bentler, 1972, 2009) and McDonald (McDonald, 1999) and the average variance extracted (AVE). The interpretatibility of the reliability measures depend on the specific research context. Nevertheless, omega values below 0.6 or AVE values below 0.5 should be regarded with criticism. ")
 ```  
 
 

@@ -22,6 +22,7 @@ header-includes:
    - \setmainfont[BoldFont=FiraSans-Bold, Extension=.otf]{FiraSans-Regular}
    - \usepackage{booktabs}
    - \usepackage{longtable}
+   - \usepackage{float}
 ---
 
 

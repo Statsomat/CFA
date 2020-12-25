@@ -176,3 +176,97 @@ cross_loadings_row <- function(df,cols){
   
 }
 
+discriminantVal <- function (object, cutoff = 0.9, merge = FALSE, level = 0.95, data) {
+  free <- lavInspect(object, "free", add.class = FALSE)
+  if (lavInspect(object, "ngroups") > 1L | lavInspect(object, 
+                                                      "nlevels") > 1L) 
+    stop("Only implemented for single-group, single-level models so far.")
+  lvs <- lavNames(object, "lv")
+  if (cutoff <= 0 | cutoff > 1) 
+    stop("The cutoff must be between (0,1]")
+  if (merge & !missing(cutoff) & cutoff != 1) 
+    message("Merging factors imply constraining factor correlation to 1. ", 
+            "Cutoff will be ignored.")
+  if (length(lvs) == 0) 
+    stop("The model does not have any exogenous latent variables.")
+  if (length(lvs) == 1) 
+    stop("The model has only one exogenous latent variable. ", 
+         "At least two are required for assessing discriminant validity.")
+  if (length(lavNames(object, "lv.y")) > 0) 
+    warning("The model has at least one endogenous latent variable (", 
+            paste(lavNames(object, "lv.y"), collapse = ", "), 
+            "). The correlations of these variables will be estimated after ", 
+            "conditioning on their predictors.")
+  psi <- free$psi[lvs, lvs]
+  pt <- parTable(object)
+  varIndices <- which(pt$lhs == pt$rhs & pt$lhs %in% lvs & 
+                        pt$op == "~~")
+  covIndices <- which(pt$lhs != pt$rhs & pt$lhs %in% lvs & 
+                        pt$rhs %in% lvs & pt$op == "~~")
+  if (any(diag(psi) != 0)) {
+    message("Some of the latent variable variances are estimated instead of ", 
+            "fixed to 1. The model is re-estimated by scaling the latent ", 
+            "variables by fixing their variances and freeing all factor loadings.")
+    i <- intersect(varIndices, which(pt$free != 0))
+    pt$free[i] <- 0
+    pt$ustart[i] <- 1
+    pt$user[i] <- 1
+    i <- which(pt$lhs %in% pt$lhs[i] & pt$op == "=~")
+    pt$free[i] <- -1
+    pt$ustart[i] <- NA
+    i <- which(pt$free != 0)
+    pt$free[i] <- seq_along(i)
+    object <- cfa(model = pt[, 1:12], data=data, missing="fiml", estimator="ML")  # already defined above 
+    #object <- lavaan::update(object, model = pt[, 1:12])
+    pt <- parTable(object)
+  }
+  est <- lavInspect(object, "est")$psi[lvs, lvs]
+  if (any(diag(est) != 1)) {
+    message("Some of the latent variable variances are fixed to values other ", 
+            "than 1. The model is re-estimated by scaling the latent variables", 
+            " based on the first factor loading.")
+    pt$ustart[varIndices] <- 1
+    object <- cfa(model = pt[, 1:12], data=data, missing="fiml", estimator="ML")  # already defined above 
+    #object <- lavaan::update(object, model = pt[, 1:12])
+    pt <- parTable(object)
+  }
+  ret <- lavaan::parameterEstimates(object, ci = TRUE, level = level)[covIndices, 
+                                                                      c("lhs", "op", "rhs", "est", 
+                                                                        "ci.lower", "ci.upper")]
+  rownames(ret) <- seq_len(nrow(ret))
+  constrainedModels <- lapply(covIndices, function(i) {
+    thisPt <- pt
+    if (merge) {
+      lhs <- pt$lhs[i]
+      rhs <- pt$rhs[i]
+      thisPt$lhs[thisPt$lhs == lhs & thisPt$op == "=~"] <- rhs
+      thisPt <- thisPt[!(thisPt$lhs == lhs | thisPt$rhs == 
+                           lhs), ]
+      thisPt$id <- seq_len(nrow(thisPt))
+    }
+    else {
+      if (abs(pt$est[i]) > cutoff) {
+        thisCutoff <- pt$est[i]
+      }
+      else {
+        thisCutoff <- ifelse(pt$est[i] < 0, -cutoff, 
+                             cutoff)
+      }
+      thisPt$free[i] <- 0
+      thisPt$ustart[i] <- thisCutoff
+    }
+    j <- which(thisPt$free != 0)
+    thisPt$free[j] <- seq_along(j)
+    cfa(model = thisPt[, 1:12], data=data, missing="fiml", estimator="ML")  # already defined above 
+    #lavaan::update(object, model = thisPt[, 1:12])
+  })
+  lrTests <- lapply(constrainedModels, function(constrained) {
+    lavaan::lavTestLRT(object, constrained)[2, ]
+  })
+  ret <- cbind(ret, do.call(rbind, lrTests))
+  attr(ret, "baseline") <- object
+  attr(ret, "constrained") <- constrainedModels
+  ret
+}
+
+

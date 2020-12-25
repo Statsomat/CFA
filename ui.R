@@ -1,10 +1,34 @@
-
-library(shiny)
-
-source("chooser.R")
-
 # Define UI for application 
 shinyUI(fluidPage(
+  
+  
+  # Disconnect message
+  disconnectMessage(
+    text = "Error or your session timed out. ",
+    refresh = "Reload now",
+    background = "#ff9900",
+    colour = "white",
+    overlayColour = "grey",
+    overlayOpacity = 0.3,
+    refreshColour = "black"
+  ),
+  
+  # Reload button
+  # actionButton("reload", "Reload the App", onclick ="location.href='http://statsomat.shinyapps.io/correlations';", style="
+  actionButton("reload", "Reload the App", style="
+                                    color: black;
+                                    background-color: #ff9900;
+                                    float: right"),
+  
+  # Style uploading modal
+  tags$head(tags$style(".modal-body {padding: 10px}
+                     .modal-content  {-webkit-border-radius: 6px !important;-moz-border-radius: 6px !important;border-radius: 6px !important;}
+                     .modal-dialog { width: 400px; display: inline-block; text-align: center; vertical-align: top;}
+                     .modal-header {background-color: #ff9900; border-top-left-radius: 6px; border-top-right-radius: 6px}
+                     .modal { text-align: center; padding-right:10px; padding-top: 24px;}
+                     .close { font-size: 16px}")),
+  
+  
   
   tags$head(
     tags$style(HTML("
@@ -53,7 +77,7 @@ shinyUI(fluidPage(
      background-color: #396e9f;
      padding: 20px;
      margin-bottom: 0px;"),
-  h2("Full Version", 
+  h2("Welcome", 
      style = "font-family: 'Source Sans Pro';
      color: #fff; text-align: center;
      background-color: #2fa42d;
