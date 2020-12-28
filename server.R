@@ -165,7 +165,7 @@ shinyServer(function(input, output, session) {
     }
     
   })
-
+  
 
   # This creates a short-term storage location for a filepath 
   report <- reactiveValues(filepath = NULL) 
@@ -210,8 +210,13 @@ shinyServer(function(input, output, session) {
     enc_guessed <- guess_encoding(input$file$datapath)
     enc_guessed_first <- enc_guessed[[1]][1]
     
-    params <- list(data = datainput(), filename=input$file, fencoding=input$fencoding, decimal=input$decimal, enc_guessed = enc_guessed_first, 
-                   vars1 = input$selection1$right, model = input$text)
+    if (is.null(input$textprediction)){
+      params <- list(data = datainput(), filename=input$file, fencoding=input$fencoding, decimal=input$decimal, enc_guessed = enc_guessed_first, 
+                   vars1 = input$selection1$right, model = input$text, direction = NA)
+    } else {
+      params <- list(data = datainput(), filename=input$file, fencoding=input$fencoding, decimal=input$decimal, enc_guessed = enc_guessed_first, 
+                     vars1 = input$selection1$right, model = input$text, direction = input$textprediction)
+    }
     
     
     tryCatch({

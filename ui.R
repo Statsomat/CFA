@@ -147,19 +147,33 @@ shinyUI(fluidPage(
             
             wellPanel(style = "background: #adc7de;", 
                       
-                      h3("Type Here Your Model"),
+                      h3("Type Your Model"),
                       
-                      h5("lavaan model syntax"),
+                      h5("Use the lavaan model syntax. Overwrite the example below. "),
                       
-                      tags$textarea(id="text", placeholder="# latent variable definitions 
+                      tags$textarea(id="text", placeholder="# lavaan model syntax 
 f1 =~ x1 + x2 + x3
 f2 =~ x4 + x5 + x6
 f3 =~ x7 + x8 + x9
-", rows=15, cols=100)
+", rows=10, cols=60)
                       
             ),
             
-            
+            wellPanel(style = "background: #adc7de;", 
+                      
+                      h3("Expected Signs of Factor Loadings"),
+                      
+                      h5("Is it a positive or a negative association? "),
+                      
+                      h5("Overwrite the example below or leave it blank if you're unsure. "),
+                      
+                      tags$textarea(id="textprediction", placeholder="# expectation for the signs (e.g. direction) of factor loadings
+f1 =~ +x1 +x2 +x3
+f2 =~ -x4 +x5 +x6
+f3 =~ -x7 +x8 +x9
+", rows=10, cols=60)
+                      
+            )
             
       )
                   

@@ -147,21 +147,22 @@ error_covariances <- function(df,fit){
 
 # Table Interpretation of Unstandardized Factor Loadings
 text <-  function(df, cols){
-  x <- df[df$op=="=~",3]
+  df <- df[df$op=="=~",,]
+  x <- df$rhs
   duplicates <- which(duplicated(x))
-  if (is.na(cols[4])){
-    paste(cols[2],"is marker variable for",cols[1])
-  } else if (cols[3]>=0){
-    if (cols[2] %in% df[duplicates,3]){
-      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit increase in the",cols[2],"while the other factor(s) are held constant.")
+  if (is.na(cols[6])){
+    paste(cols[3],"is marker variable for",cols[1])
+  } else if (cols[4]>=0){
+    if (cols[3] %in% df[duplicates,3]){
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[4],"-unit increase in the",cols[3],"while the other factor(s) are held constant.")
     } else {
-      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit increase in the",cols[2])
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[4],"-unit increase in the",cols[3])
     }
   } else {
-    if (cols[2] %in% df[duplicates,3]){
-      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit decrease in the",cols[2],"while the other factor(s) are held constant.")
+    if (cols[3] %in% df[duplicates,3]){
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[4],"-unit decrease in the",cols[3],"while the other factor(s) are held constant.")
     } else {
-      paste("A 1-unit increase in",cols[1],"leads to a",cols[3],"-unit decrease in the",cols[2])
+      paste("A 1-unit increase in",cols[1],"leads to a",cols[4],"-unit decrease in the",cols[3])
     }
   }
 }
@@ -173,7 +174,6 @@ cross_loadings_row <- function(df,cols){
     paste("cross")
   } else {
     paste("x") }
-  
 }
 
 discriminantVal <- function (object, cutoff = 0.9, merge = FALSE, level = 0.95, data) {
@@ -270,3 +270,31 @@ discriminantVal <- function (object, cutoff = 0.9, merge = FALSE, level = 0.95, 
 }
 
 
+
+
+
+## Direction of Factor Loadings 
+direction_fl <- function(line){
+  line <- gsub(" ", "", line, fixed = TRUE)
+  line <- unlist(strsplit(line, split="=~", fixed=T))
+  ov <- unlist(strsplit(line[2], split="\\+\\-|\\+|\\-"))
+  if (ov[1]=="") ov <- ov[2:length((ov))]
+  
+  neg_df <- NULL
+  pos_df <- NULL
+  if (grepl("\\-", line[2])==TRUE){ 
+    neg <- unlist(gregexpr("\\-", line[2]))
+    neg_df <- data.frame(neg,sign=rep(-1,length(neg)))
+    colnames(neg_df) <- c("Order","Sign")
+  }
+  if (grepl("\\+", line[2])==TRUE){ 
+    pos <- unlist(gregexpr("\\+", line[2]))
+    pos_df <- data.frame(pos,sign=rep(1,length(pos)))
+    colnames(pos_df) <- c("Order","Sign")
+  }
+  signs <- rbind(neg_df,pos_df)
+  signs <- signs[order(signs$Order),]
+  signs$Variable <- ov
+  signs$lhs <- rep(line[1],nrow(signs))
+  return(signs)
+}

@@ -17,6 +17,7 @@ params:
   enc_guessed: NA
   vars1: NA
   model: NA
+  direction: NA
 header-includes:
    - \usepackage{xcolor}
    - \setmainfont[BoldFont=FiraSans-Bold, Extension=.otf]{FiraSans-Regular}
