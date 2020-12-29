@@ -147,7 +147,7 @@ error_covariances <- function(df,fit){
 
 # Table Interpretation of Unstandardized Factor Loadings
 text <-  function(df, cols){
-  df <- df[df$op=="=~",,]
+  df <- df[df$op=="=~",]
   x <- df$rhs
   duplicates <- which(duplicated(x))
   if (is.na(cols[6])){
