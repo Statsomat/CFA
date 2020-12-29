@@ -254,7 +254,7 @@ tryCatch({
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 # Missings 
 indic_missings <- FALSE
-modelcolumns <- colnames(df_work) %in% fit@pta$vnames$ov[[1]]
+modelcolumns <- colnames(df_work) %in% fit@pta$vnames$ov[[1]] # Observed Variables
 modeldata <- df_work[,modelcolumns]
 complete_rate <- sapply(modeldata, function(col) 1-(sum(is.na(col)) / dim(modeldata)[1])) 
 if (length(which(complete_rate < 1)) != 0L){
@@ -425,7 +425,7 @@ corrplot::corrplot(fittedcov, is.corr = FALSE,
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
 cat("\n## Residual Covariance Matrix", fill=TRUE)
-covraw <- resid(fit, type="raw")$cov # Residuals on cov
+covraw <- lavResiduals(fit,type="raw")$cov
 corrplot::corrplot(covraw, is.corr = FALSE,
                type = 'lower',
                order = "original",
@@ -434,7 +434,7 @@ corrplot::corrplot(covraw, is.corr = FALSE,
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
 cat("\n## Standardized Residual Matrix", fill=TRUE)
-covstd <-resid(fit, type="standardized")$cov # Std residuals on cov
+covstd <- lavResiduals(fit,type="raw")$cov.z
 corrplot::corrplot(covstd, is.corr = FALSE,
                type = 'lower',
                order = "original",
@@ -835,7 +835,7 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
   both <- both[complete.cases(both),]
   both <- unique(both)
   rownames(both) <- paste("Pair",seq(1:nrow(both)))
-  knitr::kable(both, col.names=c("Pair(s)",""), caption = "Pairs with Underestimated Covariance",linesep = '', longtable=T)  %>%
+  knitr::kable(both, col.names=NULL, caption = "Pair(s) with Underestimated Covariance",linesep = '', longtable=T)  %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else {
   cat("There are no variable pairs with standardized residuals which are larger or equal than the considered threshold 2.58 [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 [@kline]. Therefore, no relationships among the variables are substantially underestimated by the model. ")
@@ -848,7 +848,7 @@ if (nrow(stand_residuals(fit,"neg"))>0 || nrow(corr_residuals(fit,"neg"))>0){
   both <- both[complete.cases(both),]
   both <- unique(both)
   rownames(both) <- paste("Pair",seq(1:nrow(both)))
-  knitr::kable(both, col.names=c("Pair(s)",""), caption = "Pairs with Overestimated Covariance",linesep = '', longtable=T)  %>%
+  knitr::kable(both, col.names=NULL, caption = "Pair(s) with Overestimated Covariance",linesep = '', longtable=T)  %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else {
   cat("There are no variable pairs with standardized residuals which are smaller or equal than the considered threshold -2.58 [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 [@kline]. Therefore, no relationships among the variables are substantially overestimated by the model. ")
@@ -865,7 +865,7 @@ cat("\n## Modification Indices", fill=TRUE)
 cat("In the interpretation of the modification indices table(s) we rely mostly on [@brown] and [@mi]. We cite from [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ")
 
 cat("\\newline",fill=TRUE)
-cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for (residual) correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\".", fill=TRUE)
+cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for (residual) correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\". For more information with regard to the labels of the decision column, please consult the Appendix. ", fill=TRUE)
 
 # MI for correlation
 mi_corr <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="~~")
@@ -1199,24 +1199,24 @@ knitr::kable(variances, digits=2, escape = F, linesep = '',
 ```  
 
 
-```{r, results="asis", dev="cairo_pdf", eval=TRUE}
+```{r, results="asis", dev="cairo_pdf", eval=error_covariances_indic}
 cat("\n### Error Correlations", fill=TRUE)
 # Error covariances (completely stand.)
 covariances_stand <- pe_stand[pe_stand$op=="~~",]
 covariances_stand <- covariances_stand[covariances_stand$lhs != covariances_stand$rhs,]
-ov <- fit@Model@dimNames[[4]][[1]]
+ov <- fit@pta$vnames$ov[[1]]
 covariances_error <- covariances_stand[covariances_stand$lhs %in% ov,]
 covariances_error <- covariances_error[which(covariances_error$pvalue>0.05 || abs(covariances_error$est.std) <0.1),]
 covariances_error$pvalue <- sapply(covariances_error$pvalue,pformat)
 covariances_error <- covariances_error[,c(1,2,3,4,7)]
 if (nrow(covariances_error)>0){
-  cat("We remark, there exist error correlations which are not statistically significant at 5% type I error or which are are very small and below 0.1 (in absolute value). These error correlations may be unnecessary: ")
+  cat("We remark that there exist error correlations which are not statistically significant at 5% type I error or which are are very small and below 0.1 (in absolute value). These error correlations may be unnecessary: ")
   rownames(covariances_error) <- paste("Pair",seq(1:nrow(covariances_error)))
   knitr::kable(covariances_error,col.names = c("","","","Error Covariance","P-Value"), linesep = '',digits=2,
                caption="Error Correlations")  %>%
     kable_styling(position = "center", latex_options = c("HOLD_position","repeat_header"))
 } else {
-  cat("We remark, that all error covariances have completely standardized parameter estimates above 0.1 (in absolute value) and which are statistically significant at 5% type I error. Therefore, we assume that they are well defined in the model. ")
+  cat("We remark that all error correlations are above 0.1 (in absolute value) and are statistically significant at 5% type I error. Therefore, we assume that they are well defined. ")
 }
 
 ```  
@@ -1266,12 +1266,24 @@ cat("Modificate and ideally replicate the CFA in an independent sample. ")
 
 ```  
 
-
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
 cat("\n# Path Diagram", fill=TRUE)
 semPaths(fit, what="std", intercepts = FALSE)
 ```    
    
+```{r, results="asis", dev="cairo_pdf", eval=mi_indic}
+cat("\n# APPENDIX", fill=TRUE)
+cat("\n## Decision Column of the Modification Indices Table", fill=TRUE)
+```    
+   
+```{r eval=FALSE, dev="cairo_pdf", echo=mi_indic}
+not mi.significant & not high.power := "(i)"
+mi.significant & not high.power := "**(m)**"
+not mi.significant & high.power := "(nm)"
+mi.significant & high.power & not epc.high := "epc:nm"
+mi.significant & high.power & epc.high := "*epc:m*"
+```    
+  
     
 
 

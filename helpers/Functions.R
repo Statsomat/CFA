@@ -136,7 +136,7 @@ cross_loadings <- function(df){
 error_covariances <- function(df,fit){
   covariances_stand <- df[df$op=="~~",]
   covariances_stand <- covariances_stand[which(covariances_stand$lhs != covariances_stand$rhs),]
-  ov <- fit@Model@dimNames[[4]][[1]]
+  ov <- fit@pta$vnames$ov[[1]]
   covariances_error <- covariances_stand[which(covariances_stand$lhs %in% ov),]
   if (nrow(covariances_error)>0){
     return(TRUE) 
@@ -176,6 +176,7 @@ cross_loadings_row <- function(df,cols){
     paste("x") }
 }
 
+# Discriminant Validity
 discriminantVal <- function (object, cutoff = 0.9, merge = FALSE, level = 0.95, data) {
   free <- lavInspect(object, "free", add.class = FALSE)
   if (lavInspect(object, "ngroups") > 1L | lavInspect(object, 
