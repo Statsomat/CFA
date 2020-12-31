@@ -25,7 +25,18 @@ library(corrplot)
 library(kableExtra) 
 library(semTools)
 
+# Initialize next computations
 eval <- FALSE
+eval2 <- FALSE
+eval3 <- FALSE
+eval4 <- FALSE
+eval5 <- FALSE
+mi_indic <- FALSE
+pe_stand_indic2 <- FALSE
+nfactors_indic <- FALSE
+error_covariances_indic <- FALSE
+indic_missings <- FALSE
+
 tryCatch({
 
 # Drop columns if all observations are missing 
@@ -227,12 +238,12 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval}
 
-# Initialize next computations
+
 eval2 <- FALSE
 
 tryCatch({
-  # No std of ov, default std of lv 
-  fit <- cfa(params$model, data=df_work, estimator="ML") 
+  # Model only for extracting basic information 
+  fit <- cfa(params$model,  missing="fiml", data=df_work, estimator="ML") 
   eval2 <- TRUE
 
 }, error=function(e) {
@@ -252,47 +263,54 @@ tryCatch({
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-# Missings 
-indic_missings <- FALSE
+# Missings > 5%
+eval3 <- TRUE
 modelcolumns <- colnames(df_work) %in% fit@pta$vnames$ov[[1]] # Observed Variables
 modeldata <- df_work[,modelcolumns]
 complete_rate <- sapply(modeldata, function(col) 1-(sum(is.na(col)) / dim(modeldata)[1])) 
-if (length(which(complete_rate < 1)) != 0L){
-  cat("**Warning: Following model variable(s) contain missing values:**")
+if (length(which(complete_rate < 0.95)) != 0L){
+  cat("**Execution stop because of limit on missing values: There exist model variable(s) with more than 5% missing values. This app allows a max. of 5% missing values per observed variable. Please reconsider your data before using this app. **")
+  miss_var <- names(which(complete_rate < 0.95)) 
+  eval3 <- FALSE
+  knitr::kable(miss_var, col.names = "Variable(s) with missing values", linesep = '', longtable=T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+}
+``` 
+
+
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+# Missings <=5% 
+indic_missings <- FALSE
+if (length(which(complete_rate < 1 & complete_rate > 0.95)) != 0L){
+  cat("**Warning: There exist model variable(s) with <5% missing values. We assume a random missing pattern and apply a missing values imputation technique. **")
   indic_missings <- TRUE
   miss_var <- names(which(complete_rate < 1)) 
-  knitr::kable(miss_var, col.names = "Variable", linesep = '', longtable=T) %>%
+  knitr::kable(miss_var, col.names = "Variable(s) with imputed missing values", linesep = '', longtable=T) %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 }
 ```   
 
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
-
-# Initialize next computations
-eval2 <- FALSE
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+# Fit raw 
 tryCatch({
   
   if (indic_missings==TRUE){
     # No std of ov, default std of lv 
     fit <- cfa(params$model, data=df_work, missing="fiml", estimator="ML") 
-    fit2 <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", std.ov=TRUE) 
     pe <- parameterEstimates(fit, rsquare = TRUE)
-    pe_stand <- standardizedsolution(fit2, type="std.all")
   } else {
     # No std of ov, default std of lv 
     fit <- cfa(params$model, data=df_work, estimator="ML") 
-    fit2 <- cfa(params$model, data=df_work, estimator="ML", std.ov=TRUE) 
     pe <- parameterEstimates(fit, rsquare = TRUE)
-    pe_stand <- standardizedsolution(fit2, type="std.all")
   }
   
     fitmean <- cfa(params$model, data=df_work, missing="fiml", estimator="ML") # object used in discriminantVal
   
   # Further evaluation
-  eval2 <- TRUE
-  indic_missings <-  as.logical(indic_missings*eval2)
+  eval4 <- TRUE
+  indic_missings <-  as.logical(indic_missings*eval4)
 
 }, error=function(e) {
   
@@ -310,9 +328,44 @@ tryCatch({
 ```     
 
 
+
+
+```{r, results="asis", dev="cairo_pdf", eval=eval4}
+
+# Fit with STD OV
+tryCatch({
+  
+  if (indic_missings==TRUE){
+    # No std of ov, default std of lv 
+    fit2 <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", std.ov=TRUE) 
+    pe_stand <- standardizedsolution(fit2, type="std.all")
+  } else {
+    # No std of ov, default std of lv 
+    fit2 <- cfa(params$model, data=df_work, estimator="ML", std.ov=TRUE) 
+    pe_stand <- standardizedsolution(fit2, type="std.all")
+  }
+  
+
+}, error=function(e) {
+  
+  stop(safeError("Errors in the cfa execution. Please reconsider the data or the model."))
+  
+})
+
+
+
+
+```     
+
+
+
+
+
+
+
 \pagebreak
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval4}
 cat("\n# Model Syntax", fill=TRUE)
 info <- inspect(fit, what="list")
 info <- info[,c(2,3,4,5,8)]
@@ -321,27 +374,26 @@ knitr::kable(info, col.names=c("Left hand side","Operator","Right hand side","Us
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```               
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval4}
 cat("\n# Assumptions", fill=TRUE)
 cat("Open issue", fill=TRUE)
 ```           
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval4}
 cat("\n# Model Settings", fill=TRUE)
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval4}
 cat("\n# Outputs", fill=TRUE)
 cat("\n## Model Fit Summary", fill=TRUE)
 ```
 
-```{r, dev="cairo_pdf", eval=eval2}
+```{r, dev="cairo_pdf", eval=eval4}
 
-eval3 <- FALSE
 tryCatch({
   
   summary(fit, fit.measures=TRUE)
-  eval3 <- TRUE
+  eval5 <- TRUE
   
 }, error=function(e) {
   
@@ -353,15 +405,15 @@ tryCatch({
 
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Completely Standardized Parameter Estimates", fill=TRUE)
 ```  
 
-```{r, dev="cairo_pdf", eval=eval3}
+```{r, dev="cairo_pdf", eval=eval5}
 standardizedSolution(fit2, type="std.all", output="text")
 ```  
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Communality", fill=TRUE)
 r2 <- pe[pe$op=="r2",c(1,4)]
 r2 <- r2[order(r2$lhs),]
@@ -372,7 +424,7 @@ knitr::kable(r2,caption="Communality",digits=2, row.names = NA, linesep = '', lo
 ```  
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 # Indicator for Factor Discriminant Validity: True only if >1 factors 
 if (length(fit@pta$vnames$lv.x[[1]])>1) nfactors_indic=TRUE else nfactors_indic=FALSE
 ``` 
@@ -388,9 +440,9 @@ knitr::kable(discr,caption="Factor Discriminant Validity Test at Cutoff 0.85",di
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```  
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Factor Reliability", fill=TRUE)
-rel <- reliability(fit,return.total = TRUE, dropSingle = FALSE, omit.imps = c("no.conv", "no.se", "no.npd"))
+rel <- reliability(fit, return.total = TRUE, dropSingle = FALSE, omit.imps = c("no.conv", "no.se", "no.npd"))
 rel <- rel[3:5,]
 rel <- as.data.frame(rel)
 rownames(rel) <- c("Omega (Bentler)","Omega (McDonald)","AVE")
@@ -405,7 +457,7 @@ knitr::kable(rel,caption="Factor Reliability",digits=2, linesep = '', longtable=
 options(opts)
 ```  
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Observed Covariance Matrix", fill=TRUE)
 obscov <- inspect(fit, "sampstat")$cov  
 corrplot::corrplot(obscov, is.corr = FALSE,
@@ -414,7 +466,7 @@ corrplot::corrplot(obscov, is.corr = FALSE,
                col='black', method="number", cl.pos = "n", tl.cex=.50, number.cex=0.50)
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Model-Implied Covariance Matrix", fill=TRUE)
 fittedcov <- inspect(fit, what="cov.ov") # Fitted cov
 corrplot::corrplot(fittedcov, is.corr = FALSE,
@@ -423,7 +475,7 @@ corrplot::corrplot(fittedcov, is.corr = FALSE,
                col='black', method="number", cl.pos = "n", tl.cex=.50, number.cex=0.50)
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Residual Covariance Matrix", fill=TRUE)
 covraw <- lavResiduals(fit,type="raw")$cov
 corrplot::corrplot(covraw, is.corr = FALSE,
@@ -432,7 +484,7 @@ corrplot::corrplot(covraw, is.corr = FALSE,
                tl.col='black', tl.cex=.50, number.cex=0.50, method="number")
 ```  
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Standardized Residual Matrix", fill=TRUE)
 covstd <- lavResiduals(fit,type="raw")$cov.z
 corrplot::corrplot(covstd, is.corr = FALSE,
@@ -443,7 +495,7 @@ corrplot::corrplot(covstd, is.corr = FALSE,
 ```  
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Residual Correlation Matrix", fill=TRUE)
 
 r <- resid(fit, "cor")$cov # Residuals on cor
@@ -454,7 +506,7 @@ corrplot::corrplot(r, is.corr = FALSE,
 ```  
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 # Indicator for Modification Indices
 
 # MI for Correlation 
@@ -496,13 +548,13 @@ mi_indic = (nrow(mi_fl)>0) || (nrow(mi_corr)>0)
 
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n# Interpretation", fill=TRUE)
 cat("\n## Goodness of Fit Indices", fill=TRUE)
 cat("We consider some of the model fit indices from the Model Fit Summary section to check the goodness-of-fit of the model. To decide for an acceptable or non-acceptable model, we apply thresholds considered in the References: [@brown], [@kline]. ", fill=TRUE)
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("**Model Test User Model**", fill=TRUE)
 cat("\\newline",fill=TRUE) 
 
@@ -531,11 +583,11 @@ if (fit@Fit@test$standard$df>0){
 }
 
 
-eval4 <- (eval3 && dfindic)
+eval5 <- (eval5 && dfindic)
     
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval4}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 ########
 ### Chi2
 ########
@@ -554,7 +606,7 @@ if (round(fit@Fit@test$standard$pvalue,3) > cutchi2(nrow(df_work))){
 
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval4}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("**Model Test Baseline Model**", fill=TRUE)
 cat("\\newline",fill=TRUE)
 
@@ -574,7 +626,7 @@ rmseanull <- sqrt((fit@baseline$test$standard$stat-fit@baseline$test$standard$df
 
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval4}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 
 # RMSEA
 cat("**Root Mean Square Error of Approximation:**", fill=TRUE)
@@ -610,7 +662,7 @@ rmsea <- rmsea0 + rmsea1 + rmsea2
 
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval4}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 
 # SRMR, liberal, depends highly on sample size
 cat("**Standardized Root Mean Square Residual:**", fill=TRUE)
@@ -627,7 +679,7 @@ if (round(fitMeasures(fit)["srmr"],2) < cutsrmr(nrow(df_work))){
 srmr <- (round(fitMeasures(fit)["srmr"],2) < cutsrmr(nrow(df_work)))*1L
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("**User Model versus Baseline Model**", fill=TRUE)
 cat("\\newline",fill=TRUE)
 
@@ -666,7 +718,7 @@ cfi <- cfi1 + cfi2
 
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 
 #####
 # TLI
@@ -695,7 +747,7 @@ cat("\\newline",fill=TRUE)
 }
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Summary of the Goodness of Fit Indices", fill=TRUE)
 
 # David Kenny 
@@ -703,7 +755,7 @@ if (rmseanull < 0.158){
   
   # List considered indices 
   if (nullmodel == TRUE){
-    cat("As specified above, the Chi-square test with respect to the baseline model and the low RMSEA of the baseline model suggest that the average correlation between the variables is not so high. In this case, the comparative fit indices CFI and TLI are poor model fit indices. Therefore, in the summary of the goodness of fit we consider only the Chi-square, the RMSEA and the SRMR model fit indices. ")
+    cat("As specified above, the Chi-square test and the low RMSEA with respect to the **baseline** model suggest that the average correlation between the variables is not so high. In this case, the comparative fit indices CFI and TLI are poor model fit indices. Therefore, in the summary of the goodness of fit we consider only the Chi-square, the RMSEA and the SRMR model fit indices. ")
   } else {
     cat("As specified above, the low RMSEA of the baseline model suggests that the average correlation between the variables is not so high. In this case, the comparative fit indices CFI and TLI are poor model fit indices. Therefore, in the summary of the goodness of fit we consider only the Chi-square, the RMSEA and the SRMR model fit indices. ")
   }
@@ -714,28 +766,31 @@ if (rmseanull < 0.158){
     step1<-0 
     
   } else if (chi2 == 0L && srmr == 1L && rmsea == 0L){
-    cat("The Chi-square model fit index and the RMSEA suggest a non-acceptable model fit. On the other hand there is some support for the model from the SRMR fit index. We assume that the model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+    cat("There is some support for the model from the SRMR fit index but the Chi-square model fit index and the RMSEA suggest a non-acceptable model fit. We therefore assume that the model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
     step1<-1
     # A large sample size evtl. decreases the RMSEA and the SRMR indicates that the chi-square effect is not considerable. 
     # Lack of parsimony --> Too many free parameters ? 
    
   } else if (chi2 == 0L && srmr == 0L && rmsea > 0L){
-    cat("The Chi-square model fit index and the SRMR suggest a non-acceptable model fit. On the other hand there exists support for the model from the RMSEA fit index. We tentatively give the model a chance to be accepted and proceed by diagnosing the sources of possible misspecification. ")
+    cat("The Chi-square model fit index and the SRMR suggest a non-acceptable model fit. On the other hand there exists support for the model from the RMSEA fit index. The Chi-square model fit index is based on a very stringent statistical hypothesis and the acceptance hard-coded cutoff-value for SRMR may be too rigid. The goodness-of-fit of the model is uncertain. We proceed by diagnosing the sources of possible misspecification. ")
     step1<-2
-    # Is this step realistic and possible? Sample size dependence to rigid for SRMR? 
+    # Is this step realistic and possible? Sample size formula too rigid for SRMR? 
+    # False negative? 
     
   } else if (chi2 == 1L && rmsea == 0L && srmr == 1L){
-    cat("The Chi-square and the SRMR model fit indices indicate an acceptable model fit. Even if the RMSEA suggests a poor model fit, we give the model a chance to be accepted and proceed by diagnosing the sources of possible misspecification. ")
+    cat("The Chi-square and the SRMR model fit indices indicate an acceptable model fit but the RMSEA model it index suggests a poor model fit. The goodness-of-fit of the model is uncertain. We proceed by diagnosing the sources of possible misspecification. ")
     step1<-31
     # Is this step realistic and possible? 
+    # False positive? 
     
   } else if (chi2 == 1L && rmsea == 0L && srmr == 0L){
-    cat("The Chi-square model fit index suggests an acceptable model fit but the RMSEA and the SRMR suggest a non-acceptable model fit. We therefore tentatively assume a poor model fit and proceed by diagnosing the sources of possible misspecification. ")
+    cat("The Chi-square model fit index suggests an acceptable model fit but the RMSEA and the SRMR model fit indices suggest a non-acceptable model fit. The goodness-of-fit of the model is uncertain. We proceed by diagnosing the sources of possible misspecification. ")
     step1<-32
-    # Power enough? Increase sample size? 
+    # Lack of parsimony --> Too many free parameters ? 
+    # False positive? 
       
   } else if (chi2 == 1L && rmsea > 0L){
-    cat("The Chi-square model fit index and the RMSEA suggest an acceptable model fit. We verify this assertion by considering further metrics. ")
+    cat("The Chi-square model fit index and the RMSEA suggest an acceptable model fit. We tentatively assume an acceptable model fit and verify this assertion by considering further metrics. ")
     step1<-4
     # Great 
   } 
@@ -747,32 +802,35 @@ if (rmseanull < 0.158){
  ############################################################ 
   
   if (tli>0){
+    
+    cat("The TLI model fit index suggests an acceptable model fit. ")
 
       if (chi2 == 0L && srmr==0L && rmsea==0L){
-        cat("The absolute fit indices Chi-square, RMSEA and SRMR suggest a poor model fit. Therefore, we assume that the model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+        cat("The absolute fit indices Chi-square, RMSEA and SRMR suggest a poor model fit. The goodness-of-fit of the model is uncertain. We proceed by diagnosing the sources of possible misspecification. ")
         step1<-6 
         
       } else if (chi2 == 0L && srmr == 1L && rmsea == 0L){
-        cat("The Chi-square model fit index and the RMSEA suggest a poor model fit. On the other hand, there exists support for the model from the SRMR and TLI model fit indices. We therefore assume that the model is not excellent but eventually acceptable. We proceed by diagnosing the sources of possible misspecification. ")
+        cat("The SRMR model fit index suggests an acceptable model fit. The Chi-square model fit index and the RMSEA suggest a poor model fit. The goodness-of-fit of the model is uncertain. We proceed by diagnosing the sources of possible misspecification. ")
         step1<-7
         # Lack of parsimony --> Too many free parameters? 
+        # Power ? 
        
       } else if (chi2 == 0L && srmr == 0L && rmsea > 0L){
-        cat("The Chi-square model fit index and the SRMR suggest a poor model fit. On the other hand, there exists support for the model from the RMSEA and TLI model fit indices. We therefore assume that the model is not excellent but acceptable. We proceed by diagnosing the sources of possible misspecification. ")
+        cat("The RMSEA model fit index suggests an acceptable model fit. The Chi-square model fit index and the SRMR suggest a poor model fit. The Chi-square model fit index is based on a very stringent statistical hypothesis and the acceptance hard-coded cutoff-value for SRMR may be too rigid. Therefore, we ignor them and tentatively assume an acceptable model fit. We verify this assertion by considering further metrics. ")
         step1<-8
         # Sample size issues 
         
       } else if (chi2 == 0L && srmr == 1L && rmsea > 0L){
-        cat("All the indices besides the Chi-square model fit index suggest an acceptable model fit. The Chi-square model fit index is based on a very stringent statistical hypothesis. Therefore, we ignor it and tentatively assume an acceptable model fit. We verify this assertion by considering further metrics. ")
+        cat("Moreover the SRMR and the RMSEA model fit indices. The Chi-square model fit index suggests a poor model fit. The Chi-square model fit index is based on a very stringent statistical hypothesis. Therefore, we ignor it and tentatively assume an acceptable model fit. We verify this assertion by considering further metrics. ")
         step1<-9
         
       } else if (chi2 == 1L && rmsea == 0L){
-        cat("The Chi-square model fit index and the TLI suggest an acceptable model fit. Even if the RMSEA suggests a poor model fit, we tentatively assume an acceptable model fit and verify this assertion by considering further metrics. ")
+        cat("The Chi-square model fit index suggests an acceptable model fit. Even if the RMSEA suggests a poor model fit, we tentatively assume an acceptable model fit and verify this assertion by considering further metrics. ")
         step1<-10
         # Is this realistic?  
         
       } else if (chi2 == 1L && rmsea > 0L){
-        cat("The Chi-square model fit index, the RMSEA and the TLI suggest an acceptable model fit. We tentatively assume an acceptable model fit and verify this assertion by considering further metrics. ")
+        cat("Moreover the Chi-square model fit index and the RMSEA suggest an acceptable model fit. We tentatively assume an acceptable model fit and verify this assertion by considering further metrics. ")
         step1<-11
       } 
     
@@ -820,7 +878,7 @@ if (rmseanull < 0.158){
 
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Residuals", fill=TRUE)
 cat("We analyze the residual matrices from the Outputs chapter. The residual covariance matrix represents the difference between the observed covariance matrix and the fitted model-implied covariance matrix. Large absolute values indicate local areas of misfit. However, the residuals are affected by the raw metric and are difficult to interpret more precisely. ")
 cat("\\newline",fill=TRUE)
@@ -902,7 +960,7 @@ if (nrow(mi_fl2)>0){
 }
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 # Define Indicators for Cross-Loadings and Residual Errors 
 
 # Define indicator for the existence of cross-loadings
@@ -921,7 +979,7 @@ if (error_covariances(pe_stand,fit2)){
 ```
 
 
-```{r, results="asis", dev="cairo_pdf", eval=TRUE}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 # Prepare Input for Factor Loadings Direction
 directionfl_indic <- FALSE
 tryCatch({
@@ -945,7 +1003,7 @@ tryCatch({
 ```     
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 # Factor Loadings
 cat("\n##  Parameter Estimates", fill=TRUE)
 cat("\n### Factor Loadings", fill=TRUE)
@@ -1075,7 +1133,7 @@ footnote(x, number = number) %>%
 ```  
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 # Different Significance Test Results Stand vs Unstand
 
 # Table Preparation 
@@ -1155,7 +1213,7 @@ if (sum(discr$`Pr(>Chisq)` > 0.05)==0){
 ```  
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
 cat("\n### Error Variances", fill=TRUE)
 cat("We summarize the interpretation of the error variances and communalities in the next table: ")
 variances <- pe_stand[pe_stand$op=="~~",]
@@ -1228,26 +1286,26 @@ cat("In case of missing values and estimation via FIML, a meanstructure i.e. the
 ```  
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 # Factor Reliability (completely stand.)
 cat("\n## Factor Reliability", fill=TRUE)
 cat("The table \"Factor Reliability\" contains the omega measures of factor reliability given by Bentler (Bentler, 1972, 2009) and McDonald (McDonald, 1999) and the average variance extracted (AVE). The interpretatibility of the reliability measures depend on the specific research context. ")
 
-if (sum(rel_transpose$`Omega (Bentler)`<0.6)==0 && sum(rel_transpose$`Omega (McDonald)`<0.6)==0 && sum(rel_transpose$AVE<0.6,na.rm=TRUE)==0){
-  cat("In some fields of research, omega values greater or equal than 0.6 and AVE values greater or equal than 0.5 (fulfilled in your case) could be sufficient. ")
+if (sum(rel_transpose$`Omega (Bentler)`< 0.59)==0 && sum(rel_transpose$`Omega (McDonald)`< 0.59)==0 && sum(rel_transpose$AVE < 0.49, na.rm=TRUE)==0){
+  cat("In some fields of research, omega values greater or equal than 0.6 and AVE values greater or equal than 0.5 (fulfilled by and large in your case) could be sufficient. ")
 } else {
   cat("Nevertheless, omega values below 0.6 or AVE values below 0.5 (at least one of these existent in your case) should be regarded with criticism. ")
 }
 ```  
 
 
-```{r, results="asis", dev="cairo_pdf", eval=FALSE}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Final Summary", fill=TRUE)
 
 cat("Please reconsider your data and the theory behind. ")
 
 cat("\n### Eliminations", fill=TRUE)
-cat("***Factors***", fill=TRUE) # given by factor covariances >0.85
+cat("***Factors***", fill=TRUE) # given by factor covariances > 0.85
 cat("***Observed Variables***", fill=TRUE) # given by factor loadings < 0.4
 cat("***Residual Covariances***", fill=TRUE) # given by non-sign or < 0.1 residual covariances  
 cat("The variable is probably not related to factor. If also supported by theory, it could be dropped. ")
@@ -1266,7 +1324,7 @@ cat("Modificate and ideally replicate the CFA in an independent sample. ")
 
 ```  
 
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n# Path Diagram", fill=TRUE)
 semPaths(fit, what="std", intercepts = FALSE)
 ```    
@@ -1284,7 +1342,10 @@ mi.significant & high.power & not epc.high := "epc:nm"
 mi.significant & high.power & epc.high := "*epc:m*"
 ```    
   
-    
+```{r, results="asis", eval=eval5}
+cat("\n# References", fill=TRUE)
+```
+ 
 
 
 
