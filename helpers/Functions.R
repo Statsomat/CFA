@@ -17,47 +17,25 @@ cutoffcont <- function(n){
 
 
 # Compute outliers by knn proximity based method, liberal 
-# For x,y variable pair
-knnoutlier <- function(x,y){
-  data<-data.frame(x,y)
-  data<-data[complete.cases(data),]
+knnoutlier <- function(data){
+  data <- data[complete.cases(data),]
   outliers_scores <- LOOP(data, k=5, lambda=3)
-  outliers <- outliers_scores[which(outliers_scores>0.90)]
-  if (length(outliers>0))
-    return(TRUE)
-    
+  outliers <- which(outliers_scores > 0.90, arr.ind = TRUE)
+  return(outliers)
 } 
 
 
-# Check normality of one variable r
-normality <- function(r){
+# Check normality of one variable 
+normality <- function(col){
   
-  qq <- qqnorm(r,plot=FALSE)
+  qq <- qqnorm(col,plot=FALSE)
   qqcor <- with(qq,cor(x,y))
   
-  # Shapiro
-  if (length(r) < 5000){
-    if (shapiro.test(r)$p.value > 0.01) {
-      return(TRUE)
-    } else if (qqcor >=0.98){
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
+  if (qqcor >=0.975){
+    return(TRUE)
+  } else {
+    return(FALSE)
   }
-  
-  # Ad 
-  if (length(r) >= 5000){
-    if (ad.test(r)$p.value > 0.01) {
-      return(TRUE)
-    } else if (qqcor >=0.95){
-      return(TRUE)
-    } else {
-      return(FALSE)
-    }
-  }
-    
-  
 }
   
 
@@ -274,7 +252,7 @@ discriminantVal <- function (object, cutoff = 0.9, merge = FALSE, level = 0.95, 
 
 
 
-## Direction of Factor Loadings 
+# Direction of Factor Loadings 
 direction_fl <- function(line){
   line <- gsub(" ", "", line, fixed = TRUE)
   line <- unlist(strsplit(line, split="=~", fixed=T))
@@ -298,4 +276,15 @@ direction_fl <- function(line){
   signs$Variable <- ov
   signs$lhs <- rep(line[1],nrow(signs))
   return(signs)
+}
+
+
+
+# Model variables
+modelv <- function(line){
+  line <- gsub(" ", "", line, fixed = TRUE)
+  line <- unlist(strsplit(line, split="=~", fixed=T))
+  ov <- unlist(strsplit(line[2], split="\\+\\-|\\+|\\-"))
+  if (ov[1]=="") ov <- ov[2:length((ov))]
+  return(ov)
 }

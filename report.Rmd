@@ -27,9 +27,29 @@ header-includes:
 ---
 
 
-**Warning: The automatic computation and interpretation delivered by the Statsomat should not completely replace the classical, made by humans graphical exploratory data analysis and statistical analysis. There may be data cases for which the Statsomat does not deliver the most optimal solution or output interpretation.**
+```{r, dev="cairo_pdf", results="asis", echo = FALSE}
+# Check model syntax 
+msyntax <- FALSE
+model <- params$model
+modelsplit <- unlist(strsplit(model, split="\n"))
+if (modelsplit[1]=="") modelsplit <- modelsplit[2:length((modelsplit))]
+for (i in 1:length(modelsplit)){
+  if (grepl("=~",modelsplit[i])==FALSE && grepl("~~",modelsplit[i])==FALSE && grepl("~1",modelsplit[i])==FALSE){
+    cat("\\large Error: Only following lavaan model syntax operators are allowed: =\\~,\\~\\~,\\~1", fill=TRUE)
+    break
+  } else {
+    msyntax <- TRUE
+  }
+}
+```     
 
-```{r child = 'report_kernel.Rmd'}
+
+```{r, results="asis", dev="cairo_pdf", eval=msyntax, echo = FALSE}
+cat("**Warning: The automatic computation and interpretation delivered by the Statsomat should not completely replace the classical, made by humans graphical exploratory data analysis and statistical analysis. There may be data cases for which the Statsomat does not deliver the most optimal solution or output interpretation.**")
+```    
+
+
+```{r child = 'report_kernel.Rmd', eval=msyntax}
 ```
 
 

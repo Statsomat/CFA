@@ -7,15 +7,33 @@ knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE,
                       warning=FALSE, fig.width=8, booktabs = T, longtable = T, knitr.kable.NA = "",  knitr.kable.linesep = '', longtable=T) 
 ```
 
+```{r}
+# Extract model variables from params$model 
+model <- params$model
+modelsplit <- unlist(strsplit(model, split="\n"))
+if (modelsplit[1]=="") modelsplit <- modelsplit[2:length((modelsplit))]
+
+# Model variable names
+modelvars <- NULL
+for (i in 1:length(modelsplit)){
+  if (grepl("=~",modelsplit[i])==TRUE){
+    modelvars <- c(modelvars,modelv(modelsplit[i]))
+  }
+}
+
+```   
 
 ```{r}
 # Get data
 df <- params$data
 df2 <- df
-df <- df[,params$vars1,drop=FALSE]
+# df <- df[,params$vars1,drop=FALSE]
+df <- df[,modelvars,drop=FALSE]
 ```
 
 ```{r}
+# Prepare DF Work
+
 # Call used libraries 
 library(knitr) # kable
 library(fastDummies) # make dummies
@@ -24,6 +42,7 @@ library(semPlot)
 library(corrplot)
 library(kableExtra) 
 library(semTools)
+library(DDoutlier)
 
 # Initialize next computations
 eval <- FALSE
@@ -36,6 +55,7 @@ pe_stand_indic2 <- FALSE
 nfactors_indic <- FALSE
 error_covariances_indic <- FALSE
 indic_missings <- FALSE
+respicification <- FALSE
 
 tryCatch({
 
@@ -69,6 +89,7 @@ df_num <- df[which(sapply(df, is.numeric) == 1L)]
 rateunique_df <- sapply(df_num, function(col) (length(unique(na.omit(col))) / length(na.omit(col))) >= cutoffcont(length(na.omit(col))))
 cols_continuous <- names(which(rateunique_df == TRUE))
 cols_ordinal <- names(which(rateunique_df == FALSE))
+df_cont <- df_num[,cols_continuous,drop=FALSE]
 
 # Extract binary character variables 
 cols_binary <- sapply(df, function(col) is.character(col) & length(unique(na.omit(col))) == 2)
@@ -237,37 +258,9 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval}
-
-
-eval2 <- FALSE
-
-tryCatch({
-  # Model only for extracting basic information 
-  fit <- cfa(params$model,  missing="fiml", data=df_work, estimator="ML") 
-  eval2 <- TRUE
-
-}, error=function(e) {
-  
-  stop(safeError("Errors in the cfa execution. Please reconsider the data or the model."))
-  
-}, warning=function(w) {
-  
-  stop(safeError("Warnings in the cfa execution. Please reconsider the data or the model."))
-  
-}
-
-)
-
-
-```     
-
-
-```{r, results="asis", dev="cairo_pdf", eval=eval2}
 # Missings > 5%
 eval3 <- TRUE
-modelcolumns <- colnames(df_work) %in% fit@pta$vnames$ov[[1]] # Observed Variables
-modeldata <- df_work[,modelcolumns]
-complete_rate <- sapply(modeldata, function(col) 1-(sum(is.na(col)) / dim(modeldata)[1])) 
+complete_rate <- sapply(df_work, function(col) 1-(sum(is.na(col)) / dim(df_work)[1])) 
 if (length(which(complete_rate < 0.95)) != 0L){
   cat("**Execution stop because of limit on missing values: There exist model variable(s) with more than 5% missing values. This app allows a max. of 5% missing values per observed variable. Please reconsider your data before using this app. **")
   miss_var <- names(which(complete_rate < 0.95)) 
@@ -290,6 +283,15 @@ if (length(which(complete_rate < 1 & complete_rate > 0.95)) != 0L){
 }
 ```   
 
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+# Outliers
+if (length(knnoutlier(df_cont))>0){
+  cat("**Warning: Based on an analysis of the variables considered continuous, we suspect outliers in the data. If observations are erroneous, you could drop them and restart the app. Outliers may affect negatively the execution or the results of the CFA. These are the suspected row numbers: **")
+  outliers_rows <- df_cont[knnoutlier(df_cont),]
+  knitr::kable(outliers_rows, linesep = '', longtable=T, caption="Rows With Suspected Outliers") %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+}
+```   
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
@@ -840,34 +842,34 @@ if (rmseanull < 0.158){
   } else { # tli==0
     
       if (cfi==0){
-        cat("The comparative fit indices CFI and TLI suggest a poor model fit. Therefore, we assume a poor model fit and proceed by diagnosing the sources of possible misspecification. ")
+        cat("At least the comparative fit indices CFI and TLI suggest a poor model fit. Therefore, we assume a poor model fit and proceed by diagnosing the sources of possible misspecification. ")
         step1<-12 
         
       } else if (cfi>0){
         
           if (chi2 == 0L && srmr == 1L && rmsea == 0L){
-            cat("There exists support for the model from the SRMR and CFI model fit indices. We therefore assume that the model is not excellent but eventually acceptable. We proceed by diagnosing the sources of possible misspecification. ")
+            cat("The CFI and the SRMR tend to support the model but the Chi-square and the RSMSEA model fit indicate the opposite. The goodness-of-fit of the model is uncertain. We proceed by diagnosing the sources of possible misspecification. ")
             step1<-13
           # Lack of parsimony --> Too many free parameters? 
          
         } else if (chi2 == 0L && srmr == 0L && rmsea > 0L){
-          cat("There exists support for the model from the RMSEA and CFI model fit indices. We therefore assume that the model is not excellent but acceptable. We proceed by diagnosing the sources of possible misspecification. ")
+          cat("The RMSEA and the CFI model fit indices indicate an acceptable model fit. We tentatively assume an acceptable model fit and verify this assertion by considering further metrics. ")
           step1<-14
           # Sample size issues 
           
         } else if (chi2 == 0L && srmr == 1L && rmsea > 0L){
-          cat("All the indices besides the Chi-square model fit index and the TLI suggest an acceptable model fit. The Chi-square model fit index is based on a very stringent statistical hypothesis and the TLI suggests that the complexity of model could be reduced. We tentatively assume an acceptable model fit. We verify this assertion by considering further metrics. ")
+          cat("All the indices besides the Chi-square model fit index and the TLI suggest an acceptable model fit. The Chi-square model fit index is based on a very stringent statistical hypothesis. We therefore tentatively assume an acceptable model fit and verify this assertion by considering further metrics. ")
           step1<-15
           # Lack of parsimony --> Too many free parameters? 
           
         } else if (chi2 == 1L && rmsea == 0L){
-          cat("The Chi-square model fit index and the CFI suggest an acceptable model fit. The RMSEA and the TLI suggest a poor model fit. Therefore we assume that the model is not excellent but eventually acceptable. We proceed by diagnosing the sources of possible misspecification. ")
+          cat("The Chi-square model fit index and the CFI suggest an acceptable model fit. The RMSEA and the TLI suggest a poor model fit. Therefore we assume that the model is not excellent but acceptable. We proceed by diagnosing the sources of possible misspecification. ")
           step1<-16
           # Is this realistic?  
           
         } else if (chi2 == 1L && rmsea > 0L){
           cat("The Chi-square model fit index, the RMSEA and the CFI suggest an acceptable model fit. We tentatively assume an acceptable model fit and verify this assertion by considering further metrics. ")
-          step1<-11
+          step1<-17
         } 
     
       }
@@ -1174,7 +1176,7 @@ opts <- options(knitr.kable.NA = "")
 pe_text <- pe[pe$op=="=~",]
 pe_text$est <- round(pe_text$est,2)
 story <- apply(pe_text, 1, function(cols) text(pe,cols))
-cat("We proceed by interpreting the unstandardized factor loadings: ")
+cat("We proceed by interpreting the (unstandardized) factor loadings from the \"Model Fit Summary\" section: ")
 knitr::kable(story, col.names="Interpretation of Unstandardized Factor Loadings",
              caption="Interpretation of Unstandardized Factor Loadings", linesep = '', longtable = T) %>%
   kable_styling(position = "center", latex_options = c("HOLD_position","repeat_header"))
@@ -1213,7 +1215,7 @@ if (sum(discr$`Pr(>Chisq)` > 0.05)==0){
 ```  
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n### Error Variances", fill=TRUE)
 cat("We summarize the interpretation of the error variances and communalities in the next table: ")
 variances <- pe_stand[pe_stand$op=="~~",]
@@ -1302,12 +1304,43 @@ if (sum(rel_transpose$`Omega (Bentler)`< 0.59)==0 && sum(rel_transpose$`Omega (M
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Final Summary", fill=TRUE)
 
-cat("Please reconsider your data and the theory behind. ")
+cat("In our final evaluation, we distinguish between following model quality categories: acceptable, non-acceptable or uncertain. ", fill=TRUE)
+cat("\\newline", fill=TRUE) 
 
+# Check respicification
+if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)) respicification <- TRUE
+
+if (respicification==FALSE){
+  if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
+    cat("Considering the goodness-of-fit indices, the model is acceptable. Moreover, we cannot identify localized areas of ill fit. We conclude that the model is acceptable. ")
+  } else if (step1 %in% c(0,1,12)){
+    cat("Considering the goodness-of-fit indices, the model is non-acceptable. Please reconsider your data and the theory behind. ")
+  } else {
+    cat("Considering the goodness-of-fit indices, it is not clear if the model is acceptable or not. Since we cannot identify localized areas of ill fit, we assume that the model is acceptable but strongly recommend to replicate the CFA in an independent sample to validate the results. Consider also a more detailed power and sample size analysis. ")
+  }
+  
+  
+  
+} else { #respicification
+  
+  
+  if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
+    cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist localized areas of ill fit. Therefore, the quality of the model is uncertain. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying following recommendations. ")
+  } else if (step1 %in% c(0,1,12)){
+    cat("Considering the goodness-of-fit indices, the model is non-acceptable. Moreover, there exist localized areas of ill fit. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying following recommendations. ")
+  } else {
+    cat("Considering the goodness-of-fit indices, it is not clear if the model is acceptable or not. Moreover, there exist localized areas of ill fit. Therefore, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying following recommendations. ")
+  }
+ 
+}
+```
+
+
+```{r, results="asis", dev="cairo_pdf", eval=respicification}
 cat("\n### Eliminations", fill=TRUE)
-cat("***Factors***", fill=TRUE) # given by factor covariances > 0.85
-cat("***Observed Variables***", fill=TRUE) # given by factor loadings < 0.4
-cat("***Residual Covariances***", fill=TRUE) # given by non-sign or < 0.1 residual covariances  
+cat("**Observed Variables**", fill=TRUE) # given by factor loadings < 0.4
+cat("**Error Covariances**", fill=TRUE) # given by non-sign or < 0.1 residual covariances  
+cat("**Factors***", fill=TRUE) # given by factor covariances > 0.85
 cat("The variable is probably not related to factor. If also supported by theory, it could be dropped. ")
 cat("Modificate and ideally replicate the CFA in an independent sample. ")
 cat("Significant but smaller effect size. Is it acceptable for you? If not, further analysis would be recommended. ")
@@ -1315,12 +1348,24 @@ cat("Only if supported by theory, you could try to collapse the factors. ")
 cat("If possible, increase sample size and repeat analysis. ")
 
 
-cat("\n### Addings", fill=TRUE)
-cat("***Factors***", fill=TRUE) # given by special pattern in stand. resid matrix 
-cat("***Observed Variables***", fill=TRUE) # given by sig mod indices 
-cat("***Residual Covariances***", fill=TRUE) # given by sig mod indices 
-cat("Only if supported by the theory and research behind the data, you could try to update the model by a line recommended in the section \"Modification Indices \". Updating by adding a line means adding parameters to the model. The goodness-of-fit will be probably increased. ", fill=TRUE)
-cat("Modificate and ideally replicate the CFA in an independent sample. ")
+cat("\n### Addings to the Model", fill=TRUE)
+cat("**Observed Variables**", fill=TRUE) # given by significant mod indices 
+if (mi_indic==TRUE && nrow(mi_fl2)>0){ 
+  cat("Update the model by adding cross-loadings to the model indicated by the table \"Significant and Relevant MIs With Respect To Factor Loadings\".", fill=TRUE)
+}
+
+cat("**Error Covariances**", fill=TRUE) # given by significant mod indices 
+if (mi_indic==TRUE && nrow(mi_corr2)>0){
+  cat("Update the model by adding error covariances (correlations) to the model indicated by the table \"Significant and Relevant MIs With Respect To (Residual) Correlations\".", fill=TRUE)
+}
+
+if (mi_indic==TRUE){
+  cat("Start updating the model by adding a parameter with the largest modification index (and EPC) and only if this parameter can be interpreted meaningfully. Other possible localized are of misfit may be remedied by adding, i.e. freeing a single parameter.", fill=TRUE)
+}
+  
+cat("**Factors**", fill=TRUE) # given by special pattern in stand. resid matrix 
+
+cat("If you respicify the model we strongly recommend the replication of the the CFA in an independent sample. ")
 
 ```  
 
