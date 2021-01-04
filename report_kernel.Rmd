@@ -55,7 +55,9 @@ pe_stand_indic2 <- FALSE
 nfactors_indic <- FALSE
 error_covariances_indic <- FALSE
 indic_missings <- FALSE
-respicification <- FALSE
+eliminations <- FALSE
+addings <- FALSE 
+cov_underestimated <- FALSE
 
 tryCatch({
 
@@ -729,10 +731,8 @@ cfi <- cfi1 + cfi2
 
 # David Kenny 
 if (rmseanull >= 0.158){
-
 cat("Similarly to the CFI, the Tucker-Lewis Index (TLI) evaluates the fit of the model in relation to the worst-fitting baseline model described above. Moreover, overly complex models are penalized. Values can range outside zero and one but the index is interpreted similarly to the CFI. ", fill=TRUE)
 cat("\\newline",fill=TRUE)
-
   if (round(fitMeasures(fit)["tli"],3)>=0.95) {
     cat("In our case, the TLI is ",round(fitMeasures(fit)["tli"],3),"which is greater or equal than the threshold value 0.95, suggesting a good model fit. ")
   } else if (round(fitMeasures(fit)["tli"],3)>=0.9){
@@ -744,8 +744,6 @@ cat("\\newline",fill=TRUE)
   tli1 <- (round(fitMeasures(fit)["tli"],3)>=0.9)*1L
   tli2 <- (round(fitMeasures(fit)["tli"],3)>=0.95)*1L
   tli <- tli1 + tli2
-
-
 }
 ```
 
@@ -889,7 +887,8 @@ cat("\\newline",fill=TRUE)
 
 # Misfit areas 
 if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
-  cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 [@kline]. In these cases, the zero-order covariance relationship between the involved variables is probably underestimated: ")
+  cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 [@kline]. In these cases, the covariance relationship between the involved variables is probably underestimated: ")
+  cov_underestimated <- TRUE
   both <- rbind(stand_residuals(fit,"pos"),corr_residuals(fit,"pos"))
   both <- both[order(both[,1],both[,2]),]
   both <- both[complete.cases(both),]
@@ -902,7 +901,7 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
 }
 
 if (nrow(stand_residuals(fit,"neg"))>0 || nrow(corr_residuals(fit,"neg"))>0){
- cat("Following variable pairs have standardized residuals which are smaller or equal than the considered threshold -2.58 [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 [@kline]. In these cases, the zero-order covariance relationship between the involved variables is probably overestimated: ")
+ cat("Following variable pairs have standardized residuals which are smaller or equal than the considered threshold -2.58 [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 [@kline]. In these cases, the covariance relationship between the involved variables is probably overestimated: ")
   both <- rbind(stand_residuals(fit,"neg"),corr_residuals(fit,"neg"))
   both <- both[order(both[,1],both[,2]),]
   both <- both[complete.cases(both),]
@@ -1308,9 +1307,16 @@ cat("In our final evaluation, we distinguish between following model quality cat
 cat("\\newline", fill=TRUE) 
 
 # Check respicification
-if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)) respicification <- TRUE
+## Build factor criterium 
+pe_stand3 <- data.table(pe_stand2)
+pe_stand3 <- pe_stand3[,.(nonrel=sum(grepl("Uncertain",Check)),.N),by=eval(colnames(pe_stand2)[1])]
+pe_stand3 <- pe_stand3[nonrel>=3 && nonrel<N]
 
-if (respicification==FALSE){
+if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)) eliminations <- TRUE
+if (cov_underestimated==TRUE && nrow(pe_stand3)>0) addings <- TRUE 
+respecification <-eliminations || addings
+
+if (eliminations==FALSE && addings==FALSE){
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
     cat("Considering the goodness-of-fit indices, the model is acceptable. Moreover, we cannot identify localized areas of ill fit. We conclude that the model is acceptable. ")
   } else if (step1 %in% c(0,1,12)){
@@ -1325,48 +1331,68 @@ if (respicification==FALSE){
   
   
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
-    cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist localized areas of ill fit. Therefore, the quality of the model is uncertain. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying following recommendations. ")
+    cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist localized areas of ill fit. Therefore, the quality of the model is uncertain. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations. ")
   } else if (step1 %in% c(0,1,12)){
-    cat("Considering the goodness-of-fit indices, the model is non-acceptable. Moreover, there exist localized areas of ill fit. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying following recommendations. ")
+    cat("Considering the goodness-of-fit indices, the model is non-acceptable. Moreover, there exist localized areas of ill fit. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations. ")
   } else {
-    cat("Considering the goodness-of-fit indices, it is not clear if the model is acceptable or not. Moreover, there exist localized areas of ill fit. Therefore, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying following recommendations. ")
+    cat("Considering the goodness-of-fit indices, it is not clear if the model is acceptable or not. Moreover, there exist localized areas of ill fit. Therefore, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations. ")
   }
  
 }
 ```
 
 
-```{r, results="asis", dev="cairo_pdf", eval=respicification}
+```{r, results="asis", dev="cairo_pdf", eval=eliminations}
 cat("\n### Eliminations", fill=TRUE)
 cat("**Observed Variables**", fill=TRUE) # given by factor loadings < 0.4
+cat("\\newline",fill=TRUE)
 cat("**Error Covariances**", fill=TRUE) # given by non-sign or < 0.1 residual covariances  
+cat("\\newline",fill=TRUE)
 cat("**Factors***", fill=TRUE) # given by factor covariances > 0.85
+cat("\\newline",fill=TRUE)
 cat("The variable is probably not related to factor. If also supported by theory, it could be dropped. ")
 cat("Modificate and ideally replicate the CFA in an independent sample. ")
 cat("Significant but smaller effect size. Is it acceptable for you? If not, further analysis would be recommended. ")
 cat("Only if supported by theory, you could try to collapse the factors. ")
 cat("If possible, increase sample size and repeat analysis. ")
+```
 
 
-cat("\n### Addings to the Model", fill=TRUE)
-cat("**Observed Variables**", fill=TRUE) # given by significant mod indices 
+```{r, results="asis", dev="cairo_pdf", eval=addings}
+if ((mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)) || (cov_underestimated==TRUE && nrow(pe_stand3)>0)){
+  cat("\n### Addings to the Model", fill=TRUE)
+}
+
 if (mi_indic==TRUE && nrow(mi_fl2)>0){ 
-  cat("Update the model by adding cross-loadings to the model indicated by the table \"Significant and Relevant MIs With Respect To Factor Loadings\".", fill=TRUE)
+  cat("**Observed Variables**", fill=TRUE) # given by significant mod indices 
+  cat("Update the model by adding cross-loadings to the model indicated within the table \"Significant and Relevant MIs With Respect To Factor Loadings\".", fill=TRUE)
+  cat("\\newline",fill=TRUE)
 }
 
-cat("**Error Covariances**", fill=TRUE) # given by significant mod indices 
+
 if (mi_indic==TRUE && nrow(mi_corr2)>0){
-  cat("Update the model by adding error covariances (correlations) to the model indicated by the table \"Significant and Relevant MIs With Respect To (Residual) Correlations\".", fill=TRUE)
+  cat("**Error Covariances**", fill=TRUE) # given by significant mod indices 
+  cat("Update the model by adding error covariances (correlations) to the model indicated within the table \"Significant and Relevant MIs With Respect To (Residual) Correlations\". ", fill=TRUE)
+  cat("\\newline",fill=TRUE)
 }
 
-if (mi_indic==TRUE){
+if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)){
   cat("Start updating the model by adding a parameter with the largest modification index (and EPC) and only if this parameter can be interpreted meaningfully. Other possible localized are of misfit may be remedied by adding, i.e. freeing a single parameter.", fill=TRUE)
+  cat("\\newline",fill=TRUE)
 }
   
-cat("**Factors**", fill=TRUE) # given by special pattern in stand. resid matrix 
+if (cov_underestimated==TRUE && nrow(pe_stand3)>0){
+  cat("**Factors**", fill=TRUE) # given by special pattern in stand. resid matrix
+    cat("\\newline",fill=TRUE)
+  cat("Following factors contain at least three uncertain completely standardized factor loadings. In some cases, this is an indicator of a model with too few factors. Only if supported by theory, you could try to split and increase the number of factors in the model: ")
+  kable(pe_stand3[,1], col.names = NULL, caption="Factors to Split")
+  knitr::kable(pe_stand3[,1], col.names = NULL, caption ="Factors to Split", linesep = '')  %>%
+    kable_styling(position = "center", latex_options = c("HOLD_position","repeat_header"))
+}
+``` 
 
-cat("If you respicify the model we strongly recommend the replication of the the CFA in an independent sample. ")
-
+```{r, results="asis", dev="cairo_pdf", eval=respecification}
+cat("Final comments: If you have strong, theory-based reasons and decide to respicify the model, we strongly recommend the replication of the CFA in an independent sample. ")
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
