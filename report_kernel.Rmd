@@ -57,7 +57,9 @@ error_covariances_indic <- FALSE
 indic_missings <- FALSE
 eliminations <- FALSE
 addings <- FALSE 
+callforaction <- FALSE
 cov_underestimated <- FALSE
+respecification <- FALSE
 
 tryCatch({
 
@@ -172,7 +174,8 @@ if (exists("df_num")){
   } else {
     
     cat("0",fill=TRUE)
-    cat("\\newline",fill=TRUE) }
+    cat("\\newline",fill=TRUE) 
+    }
 }
 
 
@@ -186,7 +189,8 @@ if (exists("df_num")){
     } else {
     
     cat("0",fill=TRUE)
-    cat("\\newline",fill=TRUE) }
+    cat("\\newline",fill=TRUE) 
+      }
 }}
 
 
@@ -198,7 +202,8 @@ if (exists("cols_binary")){
       kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
   } else {
     cat("0",fill=TRUE)
-    cat("\\newline",fill=TRUE) }
+    cat("\\newline",fill=TRUE) 
+    }
 }
 
 
@@ -210,7 +215,8 @@ if (exists("cols_dummy")){
       kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
   } else {
     cat("0",fill=TRUE)
-    cat("\\newline",fill=TRUE) }
+    cat("\\newline",fill=TRUE) 
+    }
 }
 
 
@@ -240,7 +246,7 @@ if (exists("cols_catlarge")){
 # Missing columns
 if (exists("col_names_missing")){
   if (sum(col_names_missing) != 0L){
-    cat("\n\n\\small Number of columns that are dropped because they contain no values (all values are missing):", sum(col_names_missing))
+    cat("\n\n\\small Number of columns that are dropped because they contain no values (all values are missing):", sum(col_names_missing), fill=TRUE)
     cat("\\newline",fill=TRUE) 
   } 
 }
@@ -254,7 +260,7 @@ check_reading <- function(col){
 numeric_percent <- sapply(df_dummy, function(col) check_reading(col))
 
 if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
-  cat("**Warning: More than 90% of the values of these columns could be treated as numeric. Nevertheless, because of some values or the selected decimal character, the columns must be treated as discrete. Are all the values plausible? Please check the data once more before uploading! Column(s):**", names(numeric_percent[(numeric_percent>0.9)]),fill=TRUE)
+  cat("**Warning: More than 90% of the values of these columns could be treated as numeric. Nevertheless, because of some values or the selected decimal character, the columns must be treated as discrete. Are all the values plausible? Please check the data once more before uploading! Column(s):**", names(numeric_percent[(numeric_percent>0.9)]), fill=TRUE)
 }
 ```
 
@@ -596,7 +602,7 @@ eval5 <- (eval5 && dfindic)
 ### Chi2
 ########
 
-cat("The test statistic with the value ",round(fit@Fit@test$standard$stat,3)," is called the Chi-square model fit index and represents the difference between summaries of the model-implied covariance matrix and the observed covariance matrix which is hypothesized and desirable to be zero. In general, if the p-value is larger than",cutchi2(nrow(df_work))," then the test is not statistically significant at ",cutchi2(nrow(df_work))*100,"% error, the hypothesis cannot be rejected, which would be in favour of the model. ")
+cat("The test statistic with the value ",round(fit@Fit@test$standard$stat,3)," is called the Chi-square model fit index and represents the difference between summaries of the model-implied covariance matrix and the observed covariance matrix which is hypothesized and desirable to be zero. In general, if the p-value is larger than",cutchi2(nrow(df_work))," then the test is not statistically significant at ",cutchi2(nrow(df_work))*100,"% error, the hypothesis cannot be rejected, which would be in favour of the model. ", fill=TRUE)
 cat("\\newline",fill=TRUE)
 cat("In our case, the p-value is ", pformat(fit@Fit@test$standard$pvalue))
 
@@ -880,7 +886,7 @@ if (rmseanull < 0.158){
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Residuals", fill=TRUE)
-cat("We analyze the residual matrices from the Outputs chapter. The residual covariance matrix represents the difference between the observed covariance matrix and the fitted model-implied covariance matrix. Large absolute values indicate local areas of misfit. However, the residuals are affected by the raw metric and are difficult to interpret more precisely. ")
+cat("We analyze the residual matrices from the Outputs chapter. The residual covariance matrix represents the difference between the observed covariance matrix and the fitted model-implied covariance matrix. Large absolute values indicate local areas of misfit. However, the residuals are affected by the raw metric and are difficult to interpret more precisely. ", fill=TRUE)
 cat("\\newline",fill=TRUE)
 cat("A better interpretation allows the standardized residual matrix (residuals divided by their estimated asymptotic standard error) and the residual correlation matrix. ")
 cat("\\newline",fill=TRUE)
@@ -915,30 +921,27 @@ if (nrow(stand_residuals(fit,"neg"))>0 || nrow(corr_residuals(fit,"neg"))>0){
 
 
 if (nrow(stand_residuals(fit,"pos"))>0 || nrow(stand_residuals(fit,"neg"))>0){
-  cat("Depending on the sample size, the misspecification detected by the analysis of the residual covariance resp. correlation matrices can be relevant or could be in practice neglected. This is matter of subject in the next section(s). ")
+  cat("Depending on the sample size, the misspecification detected by the analysis of the residual covariance resp. correlation matrices can be statistically significant but not relevant and in practice negligible. This is matter of subject in the next section(s). ")
 }
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=mi_indic}
 cat("\n## Modification Indices", fill=TRUE)
-cat("In the interpretation of the modification indices table(s) we rely mostly on [@brown] and [@mi]. We cite from [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ")
-
+cat("In the interpretation of the modification indices table(s) we rely mostly on [@brown] and [@mi]. We cite from [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ", fill=TRUE)
 cat("\\newline",fill=TRUE)
 cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for (residual) correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\". For more information with regard to the labels of the decision column, please consult the Appendix. ", fill=TRUE)
+cat("\\newline",fill=TRUE)
 
 # MI for correlation
 mi_corr <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="~~")
 mi_corr2 <- mi_corr[mi_corr$decision=="*epc:m*",c(-6,-8)]
 if (nrow(mi_corr2)>0){
-  cat("\\newline",fill=TRUE)
   cat("Following modification indices with respect to (residual) correlations fulfill these requirements:")
   knitr::kable(mi_corr2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Significant and Relevant MIs With Respect To (Residual) Correlations", linesep = '', longtable=T) %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else if (nrow(mi_corr)>0 && nrow(mi_corr2)==0){
-  cat("\\newline",fill=TRUE)
   cat("We remark that these conditions are not fulfilled for modification indices with respect to (residual) correlations. Therefore, there exist no significant and relevant modification indices with respect to (residual) correlations. ")
 } else if (nrow(mi_corr)==0) {
-  cat("\\newline",fill=TRUE)
   cat("We remark that there exist no modification indices with respect to (residual) correlations. ")
 }
 
@@ -947,16 +950,13 @@ if (nrow(mi_corr2)>0){
 mi_fl <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="=~", delta=0.4)
 mi_fl2 <- mi_fl[mi_fl$decision=="*epc:m*",c(-6,-8)]
 if (nrow(mi_fl2)>0){
-  cat("\\newline",fill=TRUE)
   cat("Following modification indices with respect to factor loadings fulfill these requirements:")
   knitr::kable(mi_fl2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), 
         digits=3, caption="Significant and Relevant MIs With Respect To Factor Loadings",linesep = '', longtable=T) %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else if (nrow(mi_fl)>0 && nrow(mi_fl2)==0){
-  cat("\\newline",fill=TRUE)
   cat("We remark that these conditions are not fulfilled for modification indices with respect to factor loadings. Therefore, there exist no significant and relevant modification indices with respect to factor loadings. ")
 } else if (nrow(mi_fl)==0) {
-  cat("\\newline",fill=TRUE)
   cat("We remark that there exist no modification indices with respect to factor loadings. ")
 }
 ```
@@ -1095,6 +1095,7 @@ names(pe_stand2)[5] <- paste0(names(pe_stand2)[5], footnote_marker_number(2, "la
 names(pe_stand2)[6] <- paste0(names(pe_stand2)[6], footnote_marker_number(3, "latex"))
 names(pe_stand2)[7] <- paste0(names(pe_stand2)[7], footnote_marker_number(4, "latex"))
 
+
 ## Define Footnotes
 if (cross_loadings(pe_stand)){
   fl <- "The completely standardized factor loading can be interpreted as the correlation with the factor. "
@@ -1119,7 +1120,7 @@ if (nrow(pe_stand2[which(pe_stand2$`P-Value` > 0.05 & abs(pe_stand2$Loading) > 0
   uncertain1 <- "-----------"
 }
 if (nrow(pe_stand2[which(pe_stand2$`P-Value` <= 0.05 & abs(pe_stand2$Loading) <= 0.4),])>0){
-  uncertain2 <- "Uncertain. Significant but small(er) effect size. "
+  uncertain2 <- "Uncertain. Significant but small(er) effect size. Further analysis is recommended. "
 } else {
   uncertain2 <- "-----------"
 }
@@ -1259,7 +1260,7 @@ knitr::kable(variances, digits=2, escape = F, linesep = '',
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=error_covariances_indic}
-cat("\n### Error Correlations", fill=TRUE)
+cat("\n### Error Covariances", fill=TRUE)
 # Error covariances (completely stand.)
 covariances_stand <- pe_stand[pe_stand$op=="~~",]
 covariances_stand <- covariances_stand[covariances_stand$lhs != covariances_stand$rhs,]
@@ -1269,13 +1270,13 @@ covariances_error <- covariances_error[which(covariances_error$pvalue>0.05 || ab
 covariances_error$pvalue <- sapply(covariances_error$pvalue,pformat)
 covariances_error <- covariances_error[,c(1,2,3,4,7)]
 if (nrow(covariances_error)>0){
-  cat("We remark that there exist error correlations which are not statistically significant at 5% type I error or which are are very small and below 0.1 (in absolute value). These error correlations may be unnecessary: ")
+  cat("By investigating the completely standardized parameter estimates, we remark that there exist error correlations which are not statistically significant at 5% type I error or which are are very small and below 0.1 (in absolute value). These error correlations may be unnecessary: ")
   rownames(covariances_error) <- paste("Pair",seq(1:nrow(covariances_error)))
   knitr::kable(covariances_error,col.names = c("","","","Error Covariance","P-Value"), linesep = '',digits=2,
                caption="Error Correlations")  %>%
     kable_styling(position = "center", latex_options = c("HOLD_position","repeat_header"))
 } else {
-  cat("We remark that all error correlations are above 0.1 (in absolute value) and are statistically significant at 5% type I error. Therefore, we assume that they are well defined. ")
+  cat("By investigating the completely standardized parameter estimates, we remark that all error correlations are above 0.1 (in absolute value) and are statistically significant at 5% type I error. Therefore, we assume that they are well defined. ")
 }
 
 ```  
@@ -1295,104 +1296,128 @@ cat("The table \"Factor Reliability\" contains the omega measures of factor reli
 if (sum(rel_transpose$`Omega (Bentler)`< 0.59)==0 && sum(rel_transpose$`Omega (McDonald)`< 0.59)==0 && sum(rel_transpose$AVE < 0.49, na.rm=TRUE)==0){
   cat("In some fields of research, omega values greater or equal than 0.6 and AVE values greater or equal than 0.5 (fulfilled by and large in your case) could be sufficient. ")
 } else {
-  cat("Nevertheless, omega values below 0.6 or AVE values below 0.5 (at least one of these existent in your case) should be regarded with criticism. ")
+  cat("Nevertheless, omega values below 0.6 or AVE values below 0.5 (at least one of these existent in your case) should be regarded with criticism. The factor reliability estimates are not further considered in the final summary. ")
 }
 ```  
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
-cat("\n## Final Summary", fill=TRUE)
+cat("\n# Final Summary", fill=TRUE)
 
 cat("In our final evaluation, we distinguish between following model quality categories: acceptable, non-acceptable or uncertain. ", fill=TRUE)
 cat("\\newline", fill=TRUE) 
 
-# Check respicification
-## Build factor criterium 
+# Build factor criterium for adding factors
 pe_stand3 <- data.table(pe_stand2)
-pe_stand3 <- pe_stand3[,.(nonrel=sum(grepl("Uncertain",Check)),.N),by=eval(colnames(pe_stand2)[1])]
+#pe_stand3 <- pe_stand3[,.(nonrel=sum(grepl("Uncertain",Check)),.N),by=eval(colnames(pe_stand2)[1])]
+pe_stand3 <- pe_stand3[,.(nonrel=sum(abs(pe_stand2$Loading) <= 0.4),.N),by=eval(colnames(pe_stand2)[1])]
 pe_stand3 <- pe_stand3[nonrel>=3 && nonrel<N]
 
-if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)) eliminations <- TRUE
-if (cov_underestimated==TRUE && nrow(pe_stand3)>0) addings <- TRUE 
-respecification <-eliminations || addings
+# Define respecification
+if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)) addings <- TRUE # Modification Indices
+if (cov_underestimated==TRUE && nrow(pe_stand3)>0) addings <- TRUE # >3 small factor loadings 
+if (nrow(pe_stand2[which(pe_stand2$`P-Value` > 0.05 & abs(pe_stand2$Loading) <= 0.4),])>0) eliminations <- TRUE # non relevant factor loadings 
+if (error_covariances_indic==TRUE && nrow(covariances_error)>0) eliminations <- TRUE # non relevant error covariances 
+if (nfactors_indic==TRUE && intercorr_indic==1) eliminations <- TRUE # correlated factors
+if (sum(grepl("Uncertain",pe_stand2$Check))>0) callforaction <- TRUE # uncertain factor loadings 
+respecification <- eliminations || addings || callforaction
 
-if (eliminations==FALSE && addings==FALSE){
+# Final Summary Text
+## Knock-out because of not fulfilled expectation 
+if (length(which(pe_stand2$Check=="Not ok!"))>0){
+  cat("Since the sign(s) of the factor loadings do not correspond to your expectation, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. ")
+  
+} else if (respecification==FALSE){
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
     cat("Considering the goodness-of-fit indices, the model is acceptable. Moreover, we cannot identify localized areas of ill fit. We conclude that the model is acceptable. ")
   } else if (step1 %in% c(0,1,12)){
     cat("Considering the goodness-of-fit indices, the model is non-acceptable. Please reconsider your data and the theory behind. ")
   } else {
-    cat("Considering the goodness-of-fit indices, it is not clear if the model is acceptable or not. Since we cannot identify localized areas of ill fit, we assume that the model is acceptable but strongly recommend to replicate the CFA in an independent sample to validate the results. Consider also a more detailed power and sample size analysis. ")
+    cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Since we cannot identify (significant and relevant) localized areas of ill fit, we assume that the model is acceptable but strongly recommend to replicate the CFA in an independent sample to validate the results. Please consider also that this summary depends on (some) hard-coded cutoff-values which may be too liberal or too conservative for your research area. ")
   }
   
-  
-  
-} else { #respicification
-  
+} else if (respecification==TRUE){
   
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
-    cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist localized areas of ill fit. Therefore, the quality of the model is uncertain. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations. ")
+    cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist localized areas of ill fit. Therefore, the quality of the model is uncertain. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations or call for actions. ")
   } else if (step1 %in% c(0,1,12)){
-    cat("Considering the goodness-of-fit indices, the model is non-acceptable. Moreover, there exist localized areas of ill fit. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations. ")
+    cat("Considering the goodness-of-fit indices, the model is non-acceptable. Moreover, there exist localized areas of ill fit. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations or call for actions. ")
   } else {
-    cat("Considering the goodness-of-fit indices, it is not clear if the model is acceptable or not. Moreover, there exist localized areas of ill fit. Therefore, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations. ")
+    cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Moreover, there exist localized areas of ill fit. Therefore, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations or call for actions. ")
   }
- 
 }
+```
+
+
+```{r, results="asis", dev="cairo_pdf", eval=callforaction}
+cat("There exist factor loadings which are uncertain. To decide upon the statistical significance and relevance, further statistical tests and/or power and sample size analysis, not covered by this app are recommended. Only if supported by theory and further statistical analysis, you could drop the uncertain parameter(s) from the model. ") 
 ```
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eliminations}
-cat("\n### Eliminations", fill=TRUE)
-cat("**Observed Variables**", fill=TRUE) # given by factor loadings < 0.4
-cat("\\newline",fill=TRUE)
-cat("**Error Covariances**", fill=TRUE) # given by non-sign or < 0.1 residual covariances  
-cat("\\newline",fill=TRUE)
-cat("**Factors***", fill=TRUE) # given by factor covariances > 0.85
-cat("\\newline",fill=TRUE)
-cat("The variable is probably not related to factor. If also supported by theory, it could be dropped. ")
-cat("Modificate and ideally replicate the CFA in an independent sample. ")
-cat("Significant but smaller effect size. Is it acceptable for you? If not, further analysis would be recommended. ")
-cat("Only if supported by theory, you could try to collapse the factors. ")
-cat("If possible, increase sample size and repeat analysis. ")
+cat("\n## Eliminations from the Model", fill=TRUE)
+
+# Observed variables
+if (nrow(pe_stand2[which(pe_stand2$`P-Value` > 0.05 & abs(pe_stand2$Loading) <= 0.4),])>0){
+  cat("**Observed Variables**", fill=TRUE) # Not Relevant
+ cat("\\newline",fill=TRUE)
+  cat("There exist observed variables which are probably not related to the factor(s). If also supported by theory, the corresponding parameter(s) could be dropped from the model. ", fill=TRUE) 
+ cat("\\newline",fill=TRUE)
+}
+
+
+# Errors 
+if (error_covariances_indic==TRUE && nrow(covariances_error)>0){
+  cat("**Error Covariances**", fill=TRUE) # given by non-sign or < 0.1 residual covariances  
+ cat("\\newline",fill=TRUE)
+  cat("There exist error covariances resp. correlations which are not statistically significant at 5% type I error or which are very small and below 0.1 (in absolute value). f also supported by theory, the corresponding parameter(s) could be dropped from the model. ", fill=TRUE)
+ cat("\\newline",fill=TRUE)
+}
+
+# Factors
+if (nfactors_indic==TRUE && intercorr_indic==1){
+  cat("**Factors***", fill=TRUE)
+ cat("\\newline",fill=TRUE)
+  cat("Only if supported by theory, you could try to collapse the factors which were identified as probably non-distinguishable. ", fill=TRUE)
+ cat("\\newline",fill=TRUE)
+}
+
 ```
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=addings}
-if ((mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)) || (cov_underestimated==TRUE && nrow(pe_stand3)>0)){
-  cat("\n### Addings to the Model", fill=TRUE)
-}
+cat("\n## Addings to the Model", fill=TRUE)
 
 if (mi_indic==TRUE && nrow(mi_fl2)>0){ 
-  cat("**Observed Variables**", fill=TRUE) # given by significant mod indices 
+  cat("**Observed Variables**", fill=TRUE) # given by significant mod indices
+ cat("\\newline",fill=TRUE)
   cat("Update the model by adding cross-loadings to the model indicated within the table \"Significant and Relevant MIs With Respect To Factor Loadings\".", fill=TRUE)
-  cat("\\newline",fill=TRUE)
+ cat("\\newline",fill=TRUE)
 }
 
 
 if (mi_indic==TRUE && nrow(mi_corr2)>0){
   cat("**Error Covariances**", fill=TRUE) # given by significant mod indices 
+ cat("\\newline",fill=TRUE)
   cat("Update the model by adding error covariances (correlations) to the model indicated within the table \"Significant and Relevant MIs With Respect To (Residual) Correlations\". ", fill=TRUE)
-  cat("\\newline",fill=TRUE)
+ cat("\\newline",fill=TRUE)
 }
 
 if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)){
-  cat("Start updating the model by adding a parameter with the largest modification index (and EPC) and only if this parameter can be interpreted meaningfully. Other possible localized are of misfit may be remedied by adding, i.e. freeing a single parameter.", fill=TRUE)
-  cat("\\newline",fill=TRUE)
+  cat("Start updating the model by adding a parameter with the largest modification index (and EPC) and only if this parameter can be interpreted meaningfully. Other possible localized areas of misfit may be remedied by adding, i.e. freeing a single parameter.", fill=TRUE)
 }
   
 if (cov_underestimated==TRUE && nrow(pe_stand3)>0){
   cat("**Factors**", fill=TRUE) # given by special pattern in stand. resid matrix
-    cat("\\newline",fill=TRUE)
-  cat("Following factors contain at least three uncertain completely standardized factor loadings. In some cases, this is an indicator of a model with too few factors. Only if supported by theory, you could try to split and increase the number of factors in the model: ")
-  kable(pe_stand3[,1], col.names = NULL, caption="Factors to Split")
+ cat("\\newline",fill=TRUE)
+  cat("Following factors contain at least three completely standardized factor loadings smaller or equal than the chosen cutoff-value of 0.4. In some cases, this is an indicator of a model with too few factors. Only if supported by theory, you could try to split and increase the number of factors in the model: ")
   knitr::kable(pe_stand3[,1], col.names = NULL, caption ="Factors to Split", linesep = '')  %>%
     kable_styling(position = "center", latex_options = c("HOLD_position","repeat_header"))
 }
 ``` 
 
 ```{r, results="asis", dev="cairo_pdf", eval=respecification}
-cat("Final comments: If you have strong, theory-based reasons and decide to respicify the model, we strongly recommend the replication of the CFA in an independent sample. ")
+cat("Final comments: Please consider that this summary depends on hard-coded cutoff-values which may be too liberal or too conservative for your research area. If you have sound theory-based reasons and decide to respicify the model, we strongly recommend the replication of the CFA in an independent sample. ")
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
