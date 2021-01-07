@@ -1,5 +1,5 @@
 ---
-title: "Correlation and Association"
+title: "Confirmatory Factor Analysis"
 ---
 
 ```{r setup, include=FALSE}
@@ -8,27 +8,16 @@ knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE,
 ```
 
 ```{r}
-# Extract model variables from params$model 
-model <- params$model
-modelsplit <- unlist(strsplit(model, split="\n"))
-if (modelsplit[1]=="") modelsplit <- modelsplit[2:length((modelsplit))]
-
-# Model variable names
-modelvars <- NULL
-for (i in 1:length(modelsplit)){
-  if (grepl("=~",modelsplit[i])==TRUE){
-    modelvars <- c(modelvars,modelv(modelsplit[i]))
-  }
-}
-
-```   
-
-```{r}
-# Get data
+# Try to extract model variables from lavaan model
 df <- params$data
-df2 <- df
-# df <- df[,params$vars1,drop=FALSE]
-df <- df[,modelvars,drop=FALSE]
+model <- params$model
+tryCatch({
+  extract <- cfa(model, data=df, estimator="ML", std.ov=TRUE, std.lv=TRUE) 
+  modelvars <- extract@pta$vnames$ov[[1]]
+  df <- df[,modelvars,drop=FALSE]
+}, error=function(e) {
+  cat("")
+})
 ```
 
 ```{r}
@@ -50,8 +39,9 @@ eval2 <- FALSE
 eval3 <- FALSE
 eval4 <- FALSE
 eval5 <- FALSE
-mi_indic <- FALSE
-pe_stand_indic2 <- FALSE
+mi_indic <- FALSE # MI table available
+fac_cov_indic <- FALSE # Fixed factor covariances 
+pe_stand_indic2 <- FALSE # List param interpretation
 nfactors_indic <- FALSE
 error_covariances_indic <- FALSE
 indic_missings <- FALSE
@@ -68,6 +58,7 @@ col_names_missing <- sapply(df, function(col) all(is.na(col)))
 df[ ,col_names_missing] <- list(NULL)
 df_list <- df 
 
+
 # Drop empty rows
 rowsums <- data.frame(sapply(df,is.na))
 if (length(which(rowSums(rowsums) == dim(df)[2])) != 0L){
@@ -76,24 +67,28 @@ if (length(which(rowSums(rowsums) == dim(df)[2])) != 0L){
   df <- df[-rows_drop, ,drop=FALSE]
 }
 
-# Drop columns with one unique value (NAs not considered)
-cols_one <- sapply(df, function(col) length(unique(na.omit(col))) == 1)
-df[,cols_one] <- list(NULL)
-
-# Drop character variables with more than 10 categories, NAs included 
-cols_catlarge <- sapply(df, function(col) is.character(col) & length(unique(col)) >10)
-df[,cols_catlarge] <- list(NULL)
-
 # Convert logical variables to character
 cols_logical <- sapply(df, function(col) is.logical(col))
 df[ ,cols_logical] <- sapply(df[ ,cols_logical], as.character)
 
-# Extract continuous and ordinal variables 
+# Convert numerical variables with less than 7 unique values to character (missing values omitted)
+col_names_numeric <- sapply(df, function(col) length(unique(na.omit(col))) < 7L & is.numeric(col))
+df[ ,col_names_numeric] <- sapply(df[ ,col_names_numeric], as.character)
+
+# Extract numerical variables 
 df_num <- df[which(sapply(df, is.numeric) == 1L)]
-rateunique_df <- sapply(df_num, function(col) (length(unique(na.omit(col))) / length(na.omit(col))) >= cutoffcont(length(na.omit(col))))
-cols_continuous <- names(which(rateunique_df == TRUE))
+
+# Extract approximate continuous variables
+if (ncol(df_num)>0){
+
+  rateunique_df <- sapply(df_num, function(col) continuous(col))
+  cols_continuous <- names(which(rateunique_df == TRUE))
+  df_cont <- df_num[,rateunique_df,drop=FALSE] # numeric, continuous resp. assumption fulfilled 
+  
+} else {rateunique_df<-FALSE}
+
+# Extract ordinal columns 
 cols_ordinal <- names(which(rateunique_df == FALSE))
-df_cont <- df_num[,cols_continuous,drop=FALSE]
 
 # Extract binary character variables 
 cols_binary <- sapply(df, function(col) is.character(col) & length(unique(na.omit(col))) == 2)
@@ -119,7 +114,7 @@ eval <- TRUE
 
 }, error=function(e) {
   
-  stop(safeError("Outputs cannot be generated. Please check the data for consistency."))
+  stop(safeError("Dataset cannot be prepared. Please check the data for consistency."))
   
 }
 
@@ -163,85 +158,6 @@ cat("Variables (columns with at least one non-missing value): ", fill=TRUE)
 cat(dim(df_list)[2])
 cat("\\newline",fill=TRUE) 
 
-cat("Variables considered continuous: ", fill=TRUE)
-if (exists("df_num")){
-  if (ncol(df_num)>0){
-    if (sum(rateunique_df )>0){
-      cat(sum(rateunique_df==TRUE),fill=TRUE)
-      knitr::kable(cols_continuous, col.names = "Variables considered continuous", linesep = '', longtable=T) %>%
-        kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
-    }
-  } else {
-    
-    cat("0",fill=TRUE)
-    cat("\\newline",fill=TRUE) 
-    }
-}
-
-
-cat("Numerical variables considered binary or ordinal: ", fill=TRUE)
-if (exists("df_num")){
-  if (ncol(df_num)>0){
-    if (sum(rateunique_df==FALSE)>0){
-      cat(sum(rateunique_df==FALSE),fill=TRUE)
-      knitr::kable(cols_ordinal, col.names = "Numerical variables considered binary or ordinal", linesep = '', longtable=T) %>%
-        kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
-    } else {
-    
-    cat("0",fill=TRUE)
-    cat("\\newline",fill=TRUE) 
-      }
-}}
-
-
-cat("Character variables considered binary: ", fill=TRUE)
-if (exists("cols_binary")){
-  if (sum(cols_binary)>0){
-    cat(sum(cols_binary),fill=TRUE)
-    knitr::kable(names(which(cols_binary==TRUE)), col.names = "Character variables considered binary", linesep = '', longtable=T) %>%
-      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
-  } else {
-    cat("0",fill=TRUE)
-    cat("\\newline",fill=TRUE) 
-    }
-}
-
-
-cat("Character variables considered nominal and transformed to binary: ", fill=TRUE)
-if (exists("cols_dummy")){
-  if (sum(cols_dummy)>0){
-    cat(sum(cols_dummy),fill=TRUE)
-    knitr::kable(colnames(dummies2), col.names = "Binary dummies for nominal variables", linesep = '', longtable=T) %>%
-      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
-  } else {
-    cat("0",fill=TRUE)
-    cat("\\newline",fill=TRUE) 
-    }
-}
-
-
-# Char with just one unique value not considered
-if (exists("cols_one")){
-  if (sum(cols_one) != 0L){
-    cat("Columns with just one unique value (missings omitted) which are not considered in further computations: ")
-    cat(sum(cols_one) ,fill=TRUE)
-    cols <- names(which(cols_one==1))
-    kable(cols, col.names = "Columns not considered", linesep = '', longtable=T) %>%
-      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
-  }
-}
-
-# Char > 10 not considered
-if (exists("cols_catlarge")){
-  if (sum(cols_catlarge) != 0L){
-    cat("Character columns with more than 10 unique values which are not considered in further computations: ")
-    cat(sum(cols_catlarge),fill=TRUE)
-    cols <- names(which(cols_catlarge==1))
-    knitr::kable(cols, col.names = "Columns not considered", linesep = '', longtable=T) %>%
-      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
-  }
-}
-
 
 # Missing columns
 if (exists("col_names_missing")){
@@ -252,6 +168,56 @@ if (exists("col_names_missing")){
 }
 
 
+cat("Variables considered continuous: ", fill=TRUE)
+if (exists("df_cont") && ncol(df_cont)>0){
+    cat(ncol(df_cont),fill=TRUE)
+    knitr::kable(cols_continuous, col.names = "Variables considered continuous", linesep = '', longtable=T) %>%
+      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+  } else {
+    cat("0", fill=TRUE)
+    cat("\\newline",fill=TRUE) 
+}
+```
+
+
+```{r, results="asis", eval=FALSE}
+# Chunk with first page of basic information
+if (exists("df_num")){
+  if (ncol(df_num)>0){
+    if (sum(rateunique_df==FALSE)>0){
+      cat("Numerical variables considered binary or ordinal: ", fill=TRUE)
+      cat(sum(rateunique_df==FALSE),fill=TRUE)
+      knitr::kable(cols_ordinal, col.names = "Numerical variables considered binary or ordinal", linesep = '', longtable=T) %>%
+        kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+    } 
+  }
+}
+
+
+
+if (exists("cols_binary")){
+  if (sum(cols_binary)>0){
+    cat("Character variables considered binary: ", fill=TRUE)
+    cat(sum(cols_binary),fill=TRUE)
+    knitr::kable(names(which(cols_binary==TRUE)), col.names = "Character variables considered binary", linesep = '', longtable=T) %>%
+      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+  } 
+}
+
+
+
+if (exists("cols_dummy")){
+  if (sum(cols_dummy)>0){
+    cat("Character variables considered nominal and transformed to binary: ", fill=TRUE)
+    cat(sum(cols_dummy),fill=TRUE)
+    knitr::kable(colnames(dummies2), col.names = "Binary dummies for nominal variables", linesep = '', longtable=T) %>%
+      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+  } 
+}
+```
+
+
+```{r, results="asis", eval=eval}
 # Numeric falsly to char? 
 check_reading <- function(col){
   numeric <- !is.na(as.numeric(col))
@@ -262,13 +228,25 @@ numeric_percent <- sapply(df_dummy, function(col) check_reading(col))
 if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
   cat("**Warning: More than 90% of the values of these columns could be treated as numeric. Nevertheless, because of some values or the selected decimal character, the columns must be treated as discrete. Are all the values plausible? Please check the data once more before uploading! Column(s):**", names(numeric_percent[(numeric_percent>0.9)]), fill=TRUE)
 }
+
 ```
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval}
-# Missings > 5%
-eval3 <- TRUE
-complete_rate <- sapply(df_work, function(col) 1-(sum(is.na(col)) / dim(df_work)[1])) 
+# Continuous variables? 
+# Currently only warning, ML execution for non-normal allowed? 
+if (!exists("df_cont")){
+   cat("**Warning non-continuous variables! ML not propper estimation solution. **")
+} else if (!(modelvars %in% colnames(df_cont))){
+  cat("**Warning non-continuous variables! ML not propper estimation solution. **")
+} else {
+  eval3 <- TRUE
+}
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval3}
+# Missings in continuous > 5%
+complete_rate <- sapply(df[,modelvars,drop=FALSE], function(col) 1-(sum(is.na(col)) / dim(df)[1])) 
 if (length(which(complete_rate < 0.95)) != 0L){
   cat("**Execution stop because of limit on missing values: There exist model variable(s) with more than 5% missing values. This app allows a max. of 5% missing values per observed variable. Please reconsider your data before using this app. **")
   miss_var <- names(which(complete_rate < 0.95)) 
@@ -280,7 +258,7 @@ if (length(which(complete_rate < 0.95)) != 0L){
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
-# Missings <=5% 
+# Missings in continuous <=5% 
 indic_missings <- FALSE
 if (length(which(complete_rate < 1 & complete_rate > 0.95)) != 0L){
   cat("**Warning: There exist model variable(s) with <5% missing values. We assume a random missing pattern and apply a missing values imputation technique. **")
@@ -291,10 +269,11 @@ if (length(which(complete_rate < 1 & complete_rate > 0.95)) != 0L){
 }
 ```   
 
+
 ```{r, results="asis", dev="cairo_pdf", eval=eval3}
 # Outliers
-if (length(knnoutlier(df_cont))>0){
-  cat("**Warning: Based on an analysis of the variables considered continuous, we suspect outliers in the data. If observations are erroneous, you could drop them and restart the app. Outliers may affect negatively the execution or the results of the CFA. These are the suspected row numbers: **")
+if (exists("df_cont") && ncol(df_cont)>0 && length(knnoutlier(df_cont))>0){
+  cat("**Warning: Based on an analysis of the variables considered continuous, we suspect outliers in the data. If observations are erroneous, you could drop them and restart the app. Outliers may affect negatively the execution or the results of the CFA. These are the suspected row numbers:**")
   outliers_rows <- df_cont[knnoutlier(df_cont),]
   knitr::kable(outliers_rows, linesep = '', longtable=T, caption="Rows With Suspected Outliers") %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
@@ -302,7 +281,7 @@ if (length(knnoutlier(df_cont))>0){
 ```   
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, dev="cairo_pdf", eval=eval3}
 # Fit raw 
 tryCatch({
   
@@ -324,11 +303,11 @@ tryCatch({
 
 }, error=function(e) {
   
-  stop(safeError("Errors in the cfa execution. Please reconsider the data or the model."))
+  stop(safeError("Improper CFA solution. This can be due to: Outliers, small sample size, \n non-normality, multicollinearity, model misspecification."))
   
 }, warning=function(w) {
   
-  stop(safeError("Warnings in the cfa execution. Please reconsider the data or the model."))
+  stop(safeError("Improper CFA solution. This can be due to: Outliers, small sample size, \n non-normality, multicollinearity, model misspecification."))
   
 })
 
@@ -425,6 +404,7 @@ standardizedSolution(fit2, type="std.all", output="text")
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Communality", fill=TRUE)
+if ("label" %in% colnames(pe)) pe$label <- NULL
 r2 <- pe[pe$op=="r2",c(1,4)]
 r2 <- r2[order(r2$lhs),]
 colnames(r2) <- c("Variable","Communality")
@@ -435,16 +415,29 @@ knitr::kable(r2,caption="Communality",digits=2, row.names = NA, linesep = '', lo
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
-# Indicator for Factor Discriminant Validity: True only if >1 factors 
-if (length(fit@pta$vnames$lv.x[[1]])>1) nfactors_indic=TRUE else nfactors_indic=FALSE
+# Indicator for Factor Discriminant Validity: True only if nfactors >1 & discriminant table ok
+tryCatch({
+  
+  if (length(fit@pta$vnames$lv.x[[1]])>1){
+    discr <- discriminantVal(fitmean, cutoff = 0.85, merge = FALSE, level = 0.95, data=df_work)
+    discr <- discr[,c(1:4,11:13)]
+    discr$`Pr(>Chisq)` <- sapply(discr$`Pr(>Chisq)`,pformat)
+    discr <- discr[!is.na(discr$`Pr(>Chisq)`),]
+    if (nrow(discr)>0) nfactors_indic <- TRUE
+  }
+
+}, error=function(e) {
+  
+  cat("")
+  
+})
+
 ``` 
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=nfactors_indic}
 cat("\n## Factor Discriminant Validity", fill=TRUE)
-discr <- discriminantVal(fitmean, cutoff = 0.85, merge = FALSE, level = 0.95, data=df_work)
-discr <- discr[,c(1:4,11:13)]
-discr$`Pr(>Chisq)` <- sapply(discr$`Pr(>Chisq)`,pformat)
+
 knitr::kable(discr,caption="Factor Discriminant Validity Test at Cutoff 0.85",digits=3, row.names = NA, linesep = '', 
              col.names = c("","","","Factor Correlation","Chisq diff","Df diff","P-Value")) %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
@@ -519,13 +512,19 @@ corrplot::corrplot(r, is.corr = FALSE,
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
 # Indicator for Modification Indices
 
-# MI for Correlation 
+# MI for Error Covariances 
 mi_corr <- modindices(fit, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="~~", maximum.number=10)
+mi_corr <- mi_corr[which(mi_corr$lhs %in% fit@pta$vnames$ov[[1]]),]
 
 # MI for Factor Loadings 
 mi_fl <- modindices(fit, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="=~", delta=0.4, maximum.number=10)
 
-mi_indic = (nrow(mi_corr)>0) || (nrow(mi_fl)>0)
+# MI for Factor Covariances
+mi_fcov <- modindices(fit, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="~~", maximum.number=10)
+mi_fcov <- mi_fcov[which(mi_fcov$lhs %in% fit@pta$vnames$lv[[1]]),]
+
+# MI existent
+mi_indic = (nrow(mi_corr)>0) || (nrow(mi_fl)>0) || (nrow(mi_fcov)>0)
 
 ```
 
@@ -534,18 +533,16 @@ mi_indic = (nrow(mi_corr)>0) || (nrow(mi_fl)>0)
 cat("\n## Modification Indices", fill=TRUE)
 
 # MI for Correlation 
-mi_corr <- modindices(fit, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="~~", maximum.number=10)
 mi_corr <- mi_corr[,c(-6,-8)]
 rownames(mi_corr) <- NULL
 if (nrow(mi_corr)>0){
-  knitr::kable(mi_corr,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Modification Indices With Respect To (Residual) Correlation",linesep = '', longtable=T) %>%
+  knitr::kable(mi_corr,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Modification Indices With Respect To Error Covariances",linesep = '', longtable=T) %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header")) %>%
     footnote("Maximum 10 modification indices in descending order of their magnitude are listed. ")
 }
 
 
 # MI for Factor Loadings 
-mi_fl <- modindices(fit, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="=~", delta=0.4, maximum.number=10)
 mi_fl <- mi_fl[,c(-6,-8)]
 rownames(mi_fl) <- NULL
 if (nrow(mi_fl)>0){
@@ -554,7 +551,15 @@ if (nrow(mi_fl)>0){
     footnote("Maximum 10 modification indices in descending order of their magnitude are listed. ")
 }
 
-mi_indic = (nrow(mi_fl)>0) || (nrow(mi_corr)>0)
+# MI for Factor Covariances 
+mi_fcov <- mi_fcov[,c(-6,-8)]
+rownames(mi_fcov) <- NULL
+if (nrow(mi_fcov)>0){
+  knitr::kable(mi_fcov,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Modification Indices With Respect To Factor Covariances",linesep = '', longtable=T)  %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header")) %>%
+    footnote("Maximum 10 modification indices in descending order of their magnitude are listed. ")
+}
+
 
 ```
 
@@ -899,6 +904,8 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
   both <- both[order(both[,1],both[,2]),]
   both <- both[complete.cases(both),]
   both <- unique(both)
+  both <- t(apply(both,1,sort))
+  both <- unique(both)
   rownames(both) <- paste("Pair",seq(1:nrow(both)))
   knitr::kable(both, col.names=NULL, caption = "Pair(s) with Underestimated Covariance",linesep = '', longtable=T)  %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
@@ -911,6 +918,8 @@ if (nrow(stand_residuals(fit,"neg"))>0 || nrow(corr_residuals(fit,"neg"))>0){
   both <- rbind(stand_residuals(fit,"neg"),corr_residuals(fit,"neg"))
   both <- both[order(both[,1],both[,2]),]
   both <- both[complete.cases(both),]
+  both <- unique(both)
+  both <- t(apply(both,1,sort))
   both <- unique(both)
   rownames(both) <- paste("Pair",seq(1:nrow(both)))
   knitr::kable(both, col.names=NULL, caption = "Pair(s) with Overestimated Covariance",linesep = '', longtable=T)  %>%
@@ -929,26 +938,27 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(stand_residuals(fit,"neg"))>0){
 cat("\n## Modification Indices", fill=TRUE)
 cat("In the interpretation of the modification indices table(s) we rely mostly on [@brown] and [@mi]. We cite from [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ", fill=TRUE)
 cat("\\newline",fill=TRUE)
-cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for (residual) correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\". For more information with regard to the labels of the decision column, please consult the Appendix. ", fill=TRUE)
+cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for error or factor correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\". For more information with regard to the labels of the decision column, please consult the Appendix. ", fill=TRUE)
 cat("\\newline",fill=TRUE)
 
 # MI for correlation
-mi_corr <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="~~")
-mi_corr2 <- mi_corr[mi_corr$decision=="*epc:m*",c(-6,-8)]
+mi_corr2 <- mi_corr[which(mi_corr$decision=="*epc:m*" && mi_corr$mi>=3.84),]
+rownames(mi_corr2) <- NULL
 if (nrow(mi_corr2)>0){
   cat("Following modification indices with respect to (residual) correlations fulfill these requirements:")
-  knitr::kable(mi_corr2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Significant and Relevant MIs With Respect To (Residual) Correlations", linesep = '', longtable=T) %>%
+  knitr::kable(mi_corr2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), digits=3, caption="Significant and Relevant MIs With Respect To Error Covariances", linesep = '', longtable=T) %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else if (nrow(mi_corr)>0 && nrow(mi_corr2)==0){
-  cat("We remark that these conditions are not fulfilled for modification indices with respect to (residual) correlations. Therefore, there exist no significant and relevant modification indices with respect to (residual) correlations. ")
+  cat("We remark that these conditions are not fulfilled for modification indices with respect to error covariances. Therefore, there exist no significant and relevant modification indices with respect to error covariances. ", fill=TRUE)
+  cat("\\newline",fill=TRUE)
 } else if (nrow(mi_corr)==0) {
-  cat("We remark that there exist no modification indices with respect to (residual) correlations. ")
+  cat("We remark that there exist no modification indices with respect to error covariances. ")
+  cat("\\newline",fill=TRUE)
 }
 
 
 # MI for factor loadings
-mi_fl <- modindices(fit, minimum.value = 3.84, sort.=TRUE, power=TRUE, high.power = 0.75, na.remove=TRUE, op="=~", delta=0.4)
-mi_fl2 <- mi_fl[mi_fl$decision=="*epc:m*",c(-6,-8)]
+mi_fl2 <- mi_fl[which(mi_fl$decision=="*epc:m*" && mi_fl$mi>=3.84),]
 if (nrow(mi_fl2)>0){
   cat("Following modification indices with respect to factor loadings fulfill these requirements:")
   knitr::kable(mi_fl2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), 
@@ -956,9 +966,26 @@ if (nrow(mi_fl2)>0){
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else if (nrow(mi_fl)>0 && nrow(mi_fl2)==0){
   cat("We remark that these conditions are not fulfilled for modification indices with respect to factor loadings. Therefore, there exist no significant and relevant modification indices with respect to factor loadings. ")
+  cat("\\newline",fill=TRUE)
 } else if (nrow(mi_fl)==0) {
   cat("We remark that there exist no modification indices with respect to factor loadings. ")
+  cat("\\newline",fill=TRUE)
 }
+
+
+# MI for factor covariances
+mi_fcov2 <- mi_fcov[which(mi_fcov$decision=="*epc:m*" && mi_fcov$mi>=3.84),]
+if (nrow(mi_fcov2)>0){
+  cat("Following modification indices with respect to factor covariances fulfill these requirements:")
+  knitr::kable(mi_fcov2,col.names=c("Left","Operator","Right","Modification Index", "Expected Parameter Change", "Delta", "Power", "Decision"), 
+        digits=3, caption="Sign. and Relevant MIs With Respect To Factor Covariances",linesep = '', longtable=T) %>%
+    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+} else if (nrow(mi_fcov)>0 && nrow(mi_fcov2)==0){
+  cat("We remark that these conditions are not fulfilled for modification indices with respect to factor covariances. Therefore, there exist no significant and relevant modification indices with respect to factor covariances. ")
+} else if (nrow(mi_fcov)==0) {
+  cat("We remark that there exist no modification indices with respect to factor covariances. ")
+}
+
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
@@ -1139,6 +1166,7 @@ footnote(x, number = number) %>%
 # Different Significance Test Results Stand vs Unstand
 
 # Table Preparation 
+if ("label" %in% colnames(pe)) pe$label <- NULL
 pe2 <- pe[pe$op=="=~",c(1,2,3,7)]
 pe2$pvalue <- sapply(pe2$pvalue,pformat)
 pe2$sig <- NA
@@ -1201,9 +1229,9 @@ factornonsig <- discr[which(discr$`Pr(>Chisq)`>0.05),]
 # Text 
 cat("\n### Factor Discriminant Validity", fill=TRUE)
 cat("As noted by [@brown], \"the interpretability of the size and statistical significance of factor intercorrelations depends on the specific research context. \"")
-if (sum(discr$`Pr(>Chisq)` > 0.05)==0){
+if (sum(discr$`Pr(>Chisq)` > 0.05, na.rm=TRUE)==0){
   intercorr_indic = 0
-  cat(" Though, the largest estimated factor intercorrelation within the section \"Completely Standardized Parameter Estimates\" is",round(max_corr,2)," which we regard as a proof of a reasonable discriminant validity. Moreover, all the statistical tests for factor discriminant validity are statistically significant at 5% type I error. ")
+  cat(" Though, the largest (absolute) estimated factor intercorrelation within the section \"Completely Standardized Parameter Estimates\" is",round(max_corr,2)," which we regard as a proof of a reasonable discriminant validity. Moreover, the statistical test(s) for factor discriminant validity are statistically significant at 5% type I error. ")
 } else {
   cat(" Still, large or statistically significant factor covariances resp. correlations are questionable and provide evidence of poor discriminant validity. There is evidence to question the distinctness of the following factor pair(s), since their correlation approaches in absolute value 1.0 and their test of discriminant validity is non-statistically significant at 5% type I error: ")
   intercorr_indic = 1
@@ -1315,10 +1343,11 @@ pe_stand3 <- pe_stand3[nonrel>=3 && nonrel<N]
 
 # Define respecification
 if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)) addings <- TRUE # Modification Indices
+if (mi_indic==TRUE && nrow(mi_fcov2)>0) addings <- TRUE # Modification Indices
 if (cov_underestimated==TRUE && nrow(pe_stand3)>0) addings <- TRUE # >3 small factor loadings 
 if (nrow(pe_stand2[which(pe_stand2$`P-Value` > 0.05 & abs(pe_stand2$Loading) <= 0.4),])>0) eliminations <- TRUE # non relevant factor loadings 
 if (error_covariances_indic==TRUE && nrow(covariances_error)>0) eliminations <- TRUE # non relevant error covariances 
-if (nfactors_indic==TRUE && intercorr_indic==1) eliminations <- TRUE # correlated factors
+if (nfactors_indic==TRUE && intercorr_indic==1) eliminations <- TRUE # factor correlations near 2
 if (sum(grepl("Uncertain",pe_stand2$Check))>0) callforaction <- TRUE # uncertain factor loadings 
 respecification <- eliminations || addings || callforaction
 
@@ -1366,7 +1395,7 @@ if (nrow(pe_stand2[which(pe_stand2$`P-Value` > 0.05 & abs(pe_stand2$Loading) <= 
 }
 
 
-# Errors 
+# Error Covariances
 if (error_covariances_indic==TRUE && nrow(covariances_error)>0){
   cat("**Error Covariances**", fill=TRUE) # given by non-sign or < 0.1 residual covariances  
  cat("\\newline",fill=TRUE)
@@ -1391,7 +1420,7 @@ cat("\n## Addings to the Model", fill=TRUE)
 if (mi_indic==TRUE && nrow(mi_fl2)>0){ 
   cat("**Observed Variables**", fill=TRUE) # given by significant mod indices
  cat("\\newline",fill=TRUE)
-  cat("Update the model by adding cross-loadings to the model indicated within the table \"Significant and Relevant MIs With Respect To Factor Loadings\".", fill=TRUE)
+  cat("Update the model by adding to the model cross-loadings indicated within the table \"Significant and Relevant MIs With Respect To Factor Loadings\".", fill=TRUE)
  cat("\\newline",fill=TRUE)
 }
 
@@ -1399,9 +1428,18 @@ if (mi_indic==TRUE && nrow(mi_fl2)>0){
 if (mi_indic==TRUE && nrow(mi_corr2)>0){
   cat("**Error Covariances**", fill=TRUE) # given by significant mod indices 
  cat("\\newline",fill=TRUE)
-  cat("Update the model by adding error covariances (correlations) to the model indicated within the table \"Significant and Relevant MIs With Respect To (Residual) Correlations\". ", fill=TRUE)
+  cat("Update the model by adding to the model error covariances indicated within the table \"Significant and Relevant MIs With Respect To Error Covariances\". ", fill=TRUE)
  cat("\\newline",fill=TRUE)
 }
+
+
+if (mi_indic==TRUE && nrow(mi_fcov2)>0){
+  cat("**Factor Covariances**", fill=TRUE) # given by significant mod indices 
+  cat("\\newline",fill=TRUE)
+  cat("Update the model by adding to the model factor covariances indicated within the table \"Significant and Relevant MIs With Respect To Factor Covariances\". ", fill=TRUE)
+ cat("\\newline",fill=TRUE)
+}
+
 
 if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)){
   cat("Start updating the model by adding a parameter with the largest modification index (and EPC) and only if this parameter can be interpreted meaningfully. Other possible localized areas of misfit may be remedied by adding, i.e. freeing a single parameter.", fill=TRUE)
@@ -1417,7 +1455,8 @@ if (cov_underestimated==TRUE && nrow(pe_stand3)>0){
 ``` 
 
 ```{r, results="asis", dev="cairo_pdf", eval=respecification}
-cat("Final comments: Please consider that this summary depends on hard-coded cutoff-values which may be too liberal or too conservative for your research area. If you have sound theory-based reasons and decide to respicify the model, we strongly recommend the replication of the CFA in an independent sample. ")
+cat("\n# Final Comments",fill=TRUE)
+cat("Please consider that this summary depends on hard-coded cutoff-values which may be too liberal or too conservative for your research area. If you have sound theory-based reasons and decide to respicify the model, we strongly recommend the replication of the CFA in an independent sample. ")
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}

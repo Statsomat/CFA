@@ -32,9 +32,11 @@ header-includes:
 msyntax <- FALSE
 model <- params$model
 modelsplit <- unlist(strsplit(model, split="\n"))
-if (modelsplit[1]=="") modelsplit <- modelsplit[2:length((modelsplit))]
+modelsplit <- modelsplit[modelsplit != ""]
+modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
 for (i in 1:length(modelsplit)){
-  if (grepl("=~",modelsplit[i])==FALSE && grepl("~~",modelsplit[i])==FALSE && grepl("~1",modelsplit[i])==FALSE){
+  if (grepl("=~",modelsplit[i])==FALSE && grepl("~~",modelsplit[i])==FALSE && grepl("~1",modelsplit[i])==FALSE &&
+      grepl("#",modelsplit[i])==FALSE){
     cat("\\large Error: Only following lavaan model syntax operators are allowed: =\\~,\\~\\~,\\~1", fill=TRUE)
     break
   } else {

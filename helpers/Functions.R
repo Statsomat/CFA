@@ -1,18 +1,32 @@
-# Continuity definition
+# Continuity cutoff with respect to sample size 
 cutoffcont <- function(n){
   
-  # Cutoff for continuity f(n)=a*log10(n)+b, f(10)=0.75, f(>=100)=0.25
+  # Cutoff for continuity f(n)=a*log10(n)+b, f(10)=0.75, , f(50)=0.4, f(100)=0.25
   
   b=125
   a=-50
   
-  if (n<=100) {  
-    cut <- min(1,(a*log10(n)+b)/100)
+  if (n<=50) {  
+    cut <- min(1,round((a*log10(n)+b)/100,2))
   } else {
-    # 25 unique values for sample sizes greater than 100
-    cut <- 25/n
+    
+    # 20 unique values for sample sizes greater than 50
+    cut <- 20/n
   }
   return(cut)
+}
+
+# Variables can be: Pure continuous or continuous with max 3 replications or other discrete distribution which can be approximated by continuous 
+continuous <- function(col){
+  
+  dt <- data.table(col)
+  reps <- na.omit(dt[,.N,by=col])
+  
+  if ( (all(reps[,2]<=3)) || 
+       (length(unique(na.omit(col))) / length(na.omit(col)) >= cutoffcont(length(na.omit(col))))   ){
+    return(TRUE)
+  } else {return(FALSE)
+  }
 }
 
 
@@ -128,9 +142,7 @@ text <-  function(df, cols){
   df <- df[df$op=="=~",]
   x <- df$rhs
   duplicates <- which(duplicated(x))
-  if (is.na(cols[6])){
-    paste(cols[3],"is marker variable for",cols[1])
-  } else if (cols[4]>=0){
+  if (cols[4]>=0){
     if (cols[3] %in% df[duplicates,3]){
       paste("A 1-unit increase in",cols[1],"leads to a",cols[4],"-unit increase in the",cols[3],"while the other factor(s) are held constant.")
     } else {
