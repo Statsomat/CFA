@@ -9,6 +9,7 @@ knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE,
 
 ```{r}
 # Try to extract model variables from lavaan model
+library(lavaan)
 df <- params$data
 model <- params$model
 tryCatch({
@@ -26,12 +27,12 @@ tryCatch({
 # Call used libraries 
 library(knitr) # kable
 library(fastDummies) # make dummies
-library(lavaan)
 library(semPlot)
 library(corrplot)
 library(kableExtra) 
 library(semTools)
 library(DDoutlier)
+library(energy)
 
 # Initialize next computations
 eval <- FALSE
@@ -180,7 +181,7 @@ if (exists("df_cont") && ncol(df_cont)>0){
 ```
 
 
-```{r, results="asis", eval=FALSE}
+```{r, results="asis", eval=TRUE}
 # Chunk with first page of basic information
 if (exists("df_num")){
   if (ncol(df_num)>0){
@@ -227,41 +228,54 @@ numeric_percent <- sapply(df_dummy, function(col) check_reading(col))
 
 if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
   cat("**Warning: More than 90% of the values of these columns could be treated as numeric. Nevertheless, because of some values or the selected decimal character, the columns must be treated as discrete. Are all the values plausible? Please check the data once more before uploading! Column(s):**", names(numeric_percent[(numeric_percent>0.9)]), fill=TRUE)
+   cat("\\newline",fill=TRUE) 
 }
 
 ```
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval}
-# Continuous variables? 
-# Currently only warning, ML execution for non-normal allowed? 
-if (!exists("df_cont")){
-   cat("**Warning non-continuous variables! ML not propper estimation solution. **")
-} else if (!(modelvars %in% colnames(df_cont))){
-  cat("**Warning non-continuous variables! ML not propper estimation solution. **")
+# Continuous variables?
+if (exists("df_cont")){
+  if (exists("modelvars")){
+    if (length(modelvars) > length(colnames(df_cont))){
+      cat("**Error: Some observed variables are not considered to be continuous. Maximum Likelihood is not the propper estimation method. Other estimation methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
+      cat("\\newline",fill=TRUE) 
+    } else {
+      eval2 <- TRUE
+    }
+  } else if (ncol(df_cont) < ncol(df)){
+    cat("**Error: Some uploaded variables are not considered to be continuous. Other estimation methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
+    cat("\\newline",fill=TRUE) 
+  } else {
+    eval2 <- TRUE
+  }
 } else {
-  eval3 <- TRUE
+  cat("**Error: The uploaded variables are not considered to be continuous. Other estimation methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
+  cat("\\newline",fill=TRUE) 
 }
+
+# eval2 <- TRUE
 ```
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
-# Missings in continuous > 5%
-complete_rate <- sapply(df[,modelvars,drop=FALSE], function(col) 1-(sum(is.na(col)) / dim(df)[1])) 
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+# Missings  > 5%
+complete_rate <- sapply(df_cont, function(col) 1-(sum(is.na(col)) / dim(df)[1])) 
 if (length(which(complete_rate < 0.95)) != 0L){
-  cat("**Execution stop because of limit on missing values: There exist model variable(s) with more than 5% missing values. This app allows a max. of 5% missing values per observed variable. Please reconsider your data before using this app. **")
+  cat("**Error: Execution stop because of limit on missing values. There exist continuous variables with more than 5% missing values. This app allows a max. of 5% missing values per observed variable. Please reconsider your data before using this app. **")
   miss_var <- names(which(complete_rate < 0.95)) 
-  eval3 <- FALSE
+  eval2 <- FALSE
   knitr::kable(miss_var, col.names = "Variable(s) with missing values", linesep = '', longtable=T) %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 }
 ``` 
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
 # Missings in continuous <=5% 
 indic_missings <- FALSE
 if (length(which(complete_rate < 1 & complete_rate > 0.95)) != 0L){
-  cat("**Warning: There exist model variable(s) with <5% missing values. We assume a random missing pattern and apply a missing values imputation technique. **")
+  cat("**Warning: There exist model variable(s) with <5% missing values. We assume a random missing pattern and apply a missing values imputation technique (FIML). **")
   indic_missings <- TRUE
   miss_var <- names(which(complete_rate < 1)) 
   knitr::kable(miss_var, col.names = "Variable(s) with imputed missing values", linesep = '', longtable=T) %>%
@@ -270,15 +284,43 @@ if (length(which(complete_rate < 1 & complete_rate > 0.95)) != 0L){
 ```   
 
 
-```{r, results="asis", dev="cairo_pdf", eval=eval3}
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
 # Outliers
-if (exists("df_cont") && ncol(df_cont)>0 && length(knnoutlier(df_cont))>0){
-  cat("**Warning: Based on an analysis of the variables considered continuous, we suspect outliers in the data. If observations are erroneous, you could drop them and restart the app. Outliers may affect negatively the execution or the results of the CFA. These are the suspected row numbers:**")
-  outliers_rows <- df_cont[knnoutlier(df_cont),]
-  knitr::kable(outliers_rows, linesep = '', longtable=T, caption="Rows With Suspected Outliers") %>%
-    kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
-}
+try({
+  if (length(knnoutlier(df_cont))>0){
+    cat("**Warning: Based on an analysis of the variables considered continuous, we suspect outliers in the data. If observations are erroneous, you could drop them and restart the app. Outliers may affect negatively the execution or the results of the CFA. These are the suspected row numbers:**")
+    outliers_rows <- df_cont[knnoutlier(df_cont),]
+    knitr::kable(outliers_rows, linesep = '', longtable=T, caption="Rows With Suspected Outliers") %>%
+      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+  }
+}, silent=TRUE)
 ```   
+
+```{r, results="asis", dev="cairo_pdf", eval=eval2}
+# Normality for complete and outlier deleted dataset 
+tryCatch({
+  df_norm <- df_cont 
+  if (length(knnoutlier(df_norm))>0){
+    outliers_rows <- as.integer(row.names(outliers_rows))
+    df_norm <- df_norm[-outliers_rows,]
+  } 
+  df_norm <- df_norm[complete.cases(df_norm),]
+  qqcors <- sapply(df_norm,normality)
+  pnorm <- mvnorm.test(df_norm, 100)$p.value
+  if (sum(!qqcors)==0 || pnorm > 0.01){
+    eval3 <- TRUE
+  } else {
+    cat("**Error: We assume a great departure from multivariate normally distributed. Maximum Likelihood is not the propper estimation method. Other estimation methods for non-normally distributed data will be implemented soon. For consultancy contact: support@statsomat.com**")
+  }
+}, 
+warning=function(w){
+  message(cat("Warning: Multivariate normality check of the data could ne be fulfilled. The sequel report assumes that the data is approximately multivariate normally distributed."))
+},
+finally={
+  eval3=TRUE
+}
+)
+```  
 
 
 ```{r, dev="cairo_pdf", eval=eval3}
@@ -561,6 +603,11 @@ if (nrow(mi_fcov)>0){
 }
 
 
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
+cat("\n## Path Diagram", fill=TRUE)
+semPaths(fit, what="std", intercepts = FALSE)
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
@@ -1362,7 +1409,7 @@ if (length(which(pe_stand2$Check=="Not ok!"))>0){
   } else if (step1 %in% c(0,1,12)){
     cat("Considering the goodness-of-fit indices, the model is non-acceptable. Please reconsider your data and the theory behind. ")
   } else {
-    cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Since we cannot identify (significant and relevant) localized areas of ill fit, we assume that the model is acceptable but strongly recommend to replicate the CFA in an independent sample to validate the results. Please consider also that this summary depends on (some) hard-coded cutoff-values which may be too liberal or too conservative for your research area. ")
+    cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Since we cannot identify (significant and relevant) localized areas of ill fit, we assume that the model is acceptable but strongly recommend to replicate the CFA in an independent sample to validate the results. ")
   }
   
 } else if (respecification==TRUE){
@@ -1455,13 +1502,12 @@ if (cov_underestimated==TRUE && nrow(pe_stand3)>0){
 ``` 
 
 ```{r, results="asis", dev="cairo_pdf", eval=respecification}
-cat("\n# Final Comments",fill=TRUE)
-cat("Please consider that this summary depends on hard-coded cutoff-values which may be too liberal or too conservative for your research area. If you have sound theory-based reasons and decide to respicify the model, we strongly recommend the replication of the CFA in an independent sample. ")
+cat("If you have sound theory-based reasons and decide to respicify the model, we strongly recommend the replication of the CFA in an independent sample. ")
 ```  
 
-```{r, results="asis", dev="cairo_pdf", eval=eval5}
-cat("\n# Path Diagram", fill=TRUE)
-semPaths(fit, what="std", intercepts = FALSE)
+```{r, results="asis", dev="cairo_pdf", eval=eval5, echo = FALSE}
+cat("\n# Final Comment",fill=TRUE)
+cat("Please consider that this report depends on hard-coded cutoff-values which may be too liberal or too conservative for your research area. The automatic computation and interpretation delivered by the Statsomat app should not completely replace the classical, made by humans graphical exploratory data analysis and statistical analysis. There may be data cases for which the Statsomat does not deliver the most optimal solution or output interpretation.")
 ```    
    
 ```{r, results="asis", dev="cairo_pdf", eval=mi_indic}
