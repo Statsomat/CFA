@@ -178,11 +178,8 @@ if (exists("df_cont") && ncol(df_cont)>0){
     cat("0", fill=TRUE)
     cat("\\newline",fill=TRUE) 
 }
-```
 
 
-```{r, results="asis", eval=TRUE}
-# Chunk with first page of basic information
 if (exists("df_num")){
   if (ncol(df_num)>0){
     if (sum(rateunique_df==FALSE)>0){
@@ -288,10 +285,13 @@ if (length(which(complete_rate < 1 & complete_rate > 0.95)) != 0L){
 # Outliers
 try({
   if (length(knnoutlier(df_cont))>0){
-    cat("**Warning: Based on an analysis of the variables considered continuous, we suspect outliers in the data. If observations are erroneous, you could drop them and restart the app. Outliers may affect negatively the execution or the results of the CFA. These are the suspected row numbers:**")
+    cat("Outliers: Based on an analysis of the variables considered continuous, we suspect outliers in the data. If observations are erroneous, you could drop them and restart the app. Outliers may affect negatively the execution or the results of the CFA. These are the suspected row numbers: ")
     outliers_rows <- df_cont[knnoutlier(df_cont),]
-    knitr::kable(outliers_rows, linesep = '', longtable=T, caption="Rows With Suspected Outliers") %>%
+    knitr::kable(outliers_rows, linesep = '', longtable=T, caption="Row(s) With Suspected Outliers", digits=1) %>%
       kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+  } else {
+    cat("Outliers: Based on an analysis of the variables considered continuous, we cannot identify any significant outliers. ", fill=TRUE)
+    cat("\\newline",fill=TRUE) 
   }
 }, silent=TRUE)
 ```   
@@ -309,15 +309,15 @@ tryCatch({
   pnorm <- mvnorm.test(df_norm, 100)$p.value
   if (sum(!qqcors)==0 || pnorm > 0.01){
     eval3 <- TRUE
+    cat("Normality: We assume that the continuous variables are approximately multivariate normally distributed. ", fill=TRUE)
+    cat("\\newline",fill=TRUE) 
   } else {
-    cat("**Error: We assume a great departure from multivariate normally distributed. Maximum Likelihood is not the propper estimation method. Other estimation methods for non-normally distributed data will be implemented soon. For consultancy contact: support@statsomat.com**")
+    cat("**Error: The data is not approximately multivariate normally distributed. Maximum Likelihood is not the propper estimation method. You could try to apply suitable transformations to the data before using this app. Other estimation methods for non-normally distributed data will be implemented soon. For consultancy contact: support@statsomat.com**")
   }
 }, 
 warning=function(w){
-  message(cat("Warning: Multivariate normality check of the data could ne be fulfilled. The sequel report assumes that the data is approximately multivariate normally distributed."))
-},
-finally={
-  eval3=TRUE
+  message(cat("Warning: A multivariate normality check of the data could ne be fulfilled. In the sequel we assume that the data is approximately multivariate normally distributed."))
+  eval3 <- TRUE
 }
 )
 ```  
@@ -345,11 +345,11 @@ tryCatch({
 
 }, error=function(e) {
   
-  stop(safeError("Improper CFA solution. This can be due to: Outliers, small sample size, \n non-normality, multicollinearity, model misspecification."))
+  stop(safeError("Improper CFA solution. This can be due to: Outliers, small sample size, \n multicollinearity, model misspecification."))
   
 }, warning=function(w) {
   
-  stop(safeError("Improper CFA solution. This can be due to: Outliers, small sample size, \n non-normality, multicollinearity, model misspecification."))
+  stop(safeError("Improper CFA solution. This can be due to: Outliers, small sample size, \n multicollinearity, model misspecification."))
   
 })
 
@@ -1415,7 +1415,7 @@ if (length(which(pe_stand2$Check=="Not ok!"))>0){
 } else if (respecification==TRUE){
   
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
-    cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist localized areas of ill fit. Therefore, the quality of the model is uncertain. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations or call for actions. ")
+    cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist localized areas of ill or questionable fit which you should take into consideration. Only if supported by theory, you could try to respecify the model by applying (one of the) following recommendations or call for actions. ")
   } else if (step1 %in% c(0,1,12)){
     cat("Considering the goodness-of-fit indices, the model is non-acceptable. Moreover, there exist localized areas of ill fit. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations or call for actions. ")
   } else {
@@ -1452,7 +1452,7 @@ if (error_covariances_indic==TRUE && nrow(covariances_error)>0){
 
 # Factors
 if (nfactors_indic==TRUE && intercorr_indic==1){
-  cat("**Factors***", fill=TRUE)
+  cat("**Factors**", fill=TRUE)
  cat("\\newline",fill=TRUE)
   cat("Only if supported by theory, you could try to collapse the factors which were identified as probably non-distinguishable. ", fill=TRUE)
  cat("\\newline",fill=TRUE)
