@@ -48,6 +48,11 @@ for (i in 1:length(modelsplit)){
 ```{r child = 'report_kernel.Rmd', eval=msyntax}
 ```
 
+  
+```{r, results="asis", eval=eval5}
+cat("\n# References", fill=TRUE)
+```
+ 
 
 
 

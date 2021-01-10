@@ -45,7 +45,7 @@ normality <- function(col){
   qq <- qqnorm(col,plot=FALSE)
   qqcor <- with(qq,cor(x,y))
   
-  if (qqcor >=0.98){
+  if (qqcor >=0.975){
     return(TRUE)
   } else {
     return(FALSE)
