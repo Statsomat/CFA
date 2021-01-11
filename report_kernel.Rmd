@@ -7,6 +7,7 @@ knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE,
                       warning=FALSE, fig.width=8, booktabs = T, longtable = T, knitr.kable.NA = "",  knitr.kable.linesep = '', longtable=T) 
 ```
 
+
 ```{r}
 # Try to extract model variables from lavaan model
 library(lavaan)
@@ -307,7 +308,7 @@ tryCatch({
   pnorm <- mvnorm.test(df_norm, 100)$p.value
   if (sum(!qqcors)==0 || pnorm > 0.01){
     eval3 <- TRUE
-    cat("Normality: The continuous variables are approximately (multivariate) normally distributed. ", fill=TRUE)
+    cat("Normality: (Most of) the continuous variables are approximately (multivariate) normally distributed. ", fill=TRUE)
     cat("\\newline",fill=TRUE) 
     cat("Estimation Method: Maximum Likelihood. ", fill=TRUE)
     cat("\\newline",fill=TRUE) 
@@ -1507,6 +1508,5 @@ cat("\n## Decision Column of the Modification Indices Table", fill=TRUE)
 "epc:nm" means MI significant, power achieved but EPC not achieved 
 "*epc:m*" means MI significant, power achieved and EPC achieved 
 ```    
-
 
 

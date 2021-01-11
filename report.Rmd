@@ -48,8 +48,13 @@ for (i in 1:length(modelsplit)){
 ```{r child = 'report_kernel.Rmd', eval=msyntax}
 ```
 
+
+```{r include=FALSE}
+if (exists("eval5")) ref_indic <- eval5 else ref_indic <- FALSE
+```
   
-```{r, results="asis", eval=eval5}
+  
+```{r, results="asis", eval = ref_indic, echo=FALSE}
 cat("\n# References", fill=TRUE)
 ```
  

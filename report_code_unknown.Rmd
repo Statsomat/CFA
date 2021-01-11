@@ -45,20 +45,24 @@ for (i in 1:length(modelsplit)){
 ```     
 
 
-```{r child = 'report_kernel.Rmd'}
+```{r child = 'report_kernel.Rmd', eval=msyntax}
 ```
+
 
 ```{r include=FALSE}
-eval_code <- eval5
+if (exists("eval5")) eval_code <- eval5 else eval_code <- FALSE
 ```
+  
 
-```{r, results="asis", eval=eval_code}
+```{r, results="asis", eval=eval_code, echo=FALSE}
 cat("\n# R Packages", fill=TRUE)
 cat("The statistical numbers and graphics within this report are generated with following R and packages versions:", fill=TRUE)
 cat("\\newline ")
 cat("R version:", paste0(R.Version()[c("major","minor")], collapse = "."), fill=TRUE)
 cat("\\newline ")
 cat("Package data.table, version:", paste0(packageVersion("data.table")), fill=TRUE)
+cat("\\newline ")
+cat("Package knitr, version:", paste0(packageVersion("knitr")), fill=TRUE)
 cat("\\newline ")
 cat("Package lavaan, version:", paste0(packageVersion("lavaan")), fill=TRUE)
 cat("\\newline ")
@@ -74,7 +78,7 @@ cat("\\pagebreak")
 \pagestyle{empty} 
 
 
-```{r, results="asis", eval=eval_code}
+```{r, results="asis", eval=eval_code, echo=FALSE}
 cat("\n# R Code ", fill=TRUE)
 cat("\\normalsize\\textcolor{blue}{Instructions\\newline
 If not already available, please install R, RStudio and the requiered packages listed on the previous page. We assume that your data is stored at this location: \"C:\\textbackslash \". If not, please change the path to your data in the code below. For Windows users, avoid to use paths containing white spaces. Copy the code below, paste it carefully in a new R Script within RStudio and run it. The numerical results will be printed in the Console. The graphs can be accessed in the Plots tab. }
@@ -89,21 +93,22 @@ pre.whites {
 
 ```{whites, eval=FALSE, echo = eval_code}
 # Import required libraries
-library(data.table)
-library(lavaan)
-library(semPlot)
-library(semTools)
-library(corrplot)
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(knitr))
+suppressPackageStartupMessages(library(lavaan))
+suppressPackageStartupMessages(library(semPlot))
+suppressPackageStartupMessages(library(semTools))
+suppressPackageStartupMessages(library(corrplot))
 ```
 
-```{r, results="asis", eval=eval_code}
+```{r, results="asis", eval=eval_code, echo=FALSE}
 cat("\\# `Define the path to your data (please remark the forward slash)`")
 cat("\\newline ")  
 cat("`filepath <-")
 cat(paste0("\"C:/",params$filename[1],"\"`"))
 ```
 
-```{r, results="asis", eval=eval_code}
+```{r, results="asis", eval=eval_code, echo=FALSE}
 if (params$decimal == "auto"){
   cat("\\# `Upload the data`")
   cat("\\newline ")  
@@ -126,7 +131,7 @@ if (params$decimal == "auto"){
 }
 ```
 
-```{r, results="asis", eval=eval_code}
+```{r, results="asis", eval=eval_code, echo=FALSE}
 cat("\\# `Convert characters to UTF-8 encoding`")
 cat("\\newline ")
 cat("\\## `Depending on your local R settings`")
