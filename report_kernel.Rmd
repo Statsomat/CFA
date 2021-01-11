@@ -273,7 +273,7 @@ if (length(which(complete_rate < 0.95)) != 0L){
 # Missings in continuous <=5% 
 indic_missings <- FALSE
 if (length(which(complete_rate < 1 & complete_rate > 0.95)) != 0L){
-  cat("**Warning: There exist model variable(s) with <5% missing values. We assume a random missing pattern and apply a missing values imputation technique (FIML). **")
+  cat("Missings: There exist variable(s) with <5% missing values. We assume a random missing pattern and apply a missing values imputation technique (FIML). ")
   indic_missings <- TRUE
   miss_var <- names(which(complete_rate < 1)) 
   knitr::kable(miss_var, col.names = "Variable(s) with imputed missing values", linesep = '', longtable=T) %>%
@@ -971,7 +971,7 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(stand_residuals(fit,"neg"))>0){
 cat("\n## Modification Indices", fill=TRUE)
 cat("In the interpretation of the modification indices table(s) we rely mostly on [@brown] and [@mi]. We cite from [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ", fill=TRUE)
 cat("\\newline",fill=TRUE)
-cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for error or factor correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\". For more information with regard to the labels of the decision column, please consult the Appendix. ", fill=TRUE)
+cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for error or factor correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\" (see the Abbreviations section). ", fill=TRUE)
 cat("\\newline",fill=TRUE)
 
 # MI for correlation
@@ -1388,6 +1388,10 @@ respecification <- eliminations || addings || callforaction
 ## Knock-out because of not fulfilled expectation 
 if (length(which(pe_stand2$Check=="Not ok!"))>0){
   cat("Since the sign(s) of the factor loadings do not correspond to your expectation, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. ")
+  eliminations <- FALSE
+  addings <- FALSE
+  callforaction <- FALSE
+  respecification <- FALSE 
   
 } else if (respecification==FALSE){
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
@@ -1496,8 +1500,10 @@ cat("\n# Final Comment",fill=TRUE)
 cat("Please consider that this report depends on hard-coded cutoff-values which may be too liberal or too conservative for your research area. The automatic computation and interpretation delivered by the Statsomat app should not completely replace the classical, made by humans graphical exploratory data analysis and statistical analysis. There may be data cases for which the Statsomat does not deliver the most optimal solution or output interpretation.")
 ```    
    
+\pagebreak   
+   
 ```{r, results="asis", dev="cairo_pdf", eval=mi_indic}
-cat("\n# APPENDIX", fill=TRUE)
+cat("\n# Abbreviations", fill=TRUE)
 cat("\n## Decision Column of the Modification Indices Table", fill=TRUE)
 ```    
    

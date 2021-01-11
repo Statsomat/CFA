@@ -44,7 +44,7 @@ info <- info[,c(2,3,4,5,8)]
 
 ```{whites, eval=FALSE, echo = indic_missings}
 # Model Fit Standardized Observed Variables
-fit2 <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", std.ov=TRUE)
+fit2 <- cfa(model, data=df, missing="fiml", estimator="ML", std.ov=TRUE)
 ## Parameter Estimates
 pe_stand <- standardizedsolution(fit2, type="std.all")
 ```   
@@ -79,7 +79,7 @@ r2
 
 ```{whites, eval=FALSE, echo = nfactors_indic}
 ## Factor Discriminant Validity
-discr <- discriminantValidity(fit, cutoff = 0.85)
+discr <- suppressMessages(discriminantValidity(fit, cutoff = 0.85))
 discr <- discr[,c(1:4,11:13)]
 discr <- discr[!is.na(discr$`Pr(>Chisq)`),]
 kable(discr,caption="Factor Discriminant Validity Test at Cutoff 0.85",digits=3,
