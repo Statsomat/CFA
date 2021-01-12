@@ -14,7 +14,6 @@ shinyUI(fluidPage(
   ),
   
   # Reload button
-  # actionButton("reload", "Reload the App", onclick ="location.href='http://statsomat.shinyapps.io/correlations';", style="
   actionButton("reload", "Reload the App", style="
                                     color: black;
                                     background-color: #ff9900;
@@ -77,7 +76,7 @@ shinyUI(fluidPage(
      background-color: #396e9f;
      padding: 20px;
      margin-bottom: 0px;"),
-  h2("Welcome", 
+  h3("Experimental Beta Version", 
      style = "font-family: 'Source Sans Pro';
      color: #fff; text-align: center;
      background-color: #2fa42d;
@@ -145,35 +144,44 @@ shinyUI(fluidPage(
             ),
             
             
-            wellPanel(style = "background: #adc7de;", 
+            fluidRow(column(6, 
+                   
+                   wellPanel(style = "background: #adc7de;", 
                       
                       h3("Type Your Model"),
                       
-                      h5("Use the lavaan model syntax. Overwrite the example below. "),
+                      h5("Use the lavaan model syntax. "),
+                      
+                      h5("Overwrite the example below. "),
+                      
+                      tags$style(type="text/css", "textarea {width:100%}"),
                       
                       tags$textarea(id="text", placeholder="# lavaan model syntax 
 f1 =~ x1 + x2 + x3
 f2 =~ x4 + x5 + x6
 f3 =~ x7 + x8 + x9
-", rows=10, cols=60)
+", rows=10, cols=60,"")
                       
-            ),
+            )),
             
-            wellPanel(style = "background: #adc7de;", 
+            column(6, 
+                   wellPanel(style = "background: #adc7de;", 
                       
-                      h3("Expected Signs of Factor Loadings"),
+                      h3("Expected Sign of Factor Loadings"),
                       
                       h5("Is it a positive or a negative association? "),
                       
                       h5("Overwrite the example below or leave it blank if you're unsure. "),
                       
+                      tags$style(type="text/css", "textarea {width:100%}"),
+                      
                       tags$textarea(id="textprediction", placeholder="# expectation for the signs (e.g. direction) of factor loadings
 f1 =~ +x1 +x2 +x3
 f2 =~ -x4 +x5 +x6
 f3 =~ -x7 +x8 +x9
-", rows=10, cols=60)
+", rows=10, cols=60,"")
                       
-            )
+            )))
             
       )
                   

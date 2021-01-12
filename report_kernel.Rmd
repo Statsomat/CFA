@@ -308,7 +308,7 @@ tryCatch({
   pnorm <- mvnorm.test(df_norm, 100)$p.value
   if (sum(!qqcors)==0 || pnorm > 0.01){
     eval3 <- TRUE
-    cat("Normality: (Most of) the continuous variables are approximately (multivariate) normally distributed. ", fill=TRUE)
+    cat("Normality: The continuous variables are approximately (multivariate) normally distributed. ", fill=TRUE)
     cat("\\newline",fill=TRUE) 
     cat("Estimation Method: Maximum Likelihood. ", fill=TRUE)
     cat("\\newline",fill=TRUE) 
@@ -599,7 +599,7 @@ semPaths(fit, what="std", intercepts = FALSE)
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n# Interpretation", fill=TRUE)
 cat("\n## Goodness of Fit Indices", fill=TRUE)
-cat("We consider some of the model fit indices from the Model Fit Summary section to check the goodness-of-fit of the model. To decide for an acceptable or non-acceptable model, we apply thresholds considered in the References: [@brown], [@kline]. ", fill=TRUE)
+cat("We consider some of the model fit indices from the Model Fit Summary section to check the goodness-of-fit of the model. To decide for an acceptable or non-acceptable model, we apply thresholds considered in the References: Brown (Brown 2015), Kline (Kline 2016). ", fill=TRUE)
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
@@ -931,7 +931,7 @@ cat("\\newline",fill=TRUE)
 
 # Misfit areas 
 if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
-  cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 [@kline]. In these cases, the covariance relationship between the involved variables is probably underestimated: ")
+  cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 Brown (Brown 2015) or correlation residuals which are larger or equal than the considered threshold 0.1 Kline (Kline 2016). In these cases, the covariance relationship between the involved variables is probably underestimated: ")
   cov_underestimated <- TRUE
   both <- rbind(stand_residuals(fit,"pos"),corr_residuals(fit,"pos"))
   both <- both[order(both[,1],both[,2]),]
@@ -943,11 +943,11 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
   knitr::kable(both, col.names=NULL, caption = "Pair(s) with Underestimated Covariance",linesep = '', longtable=T)  %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else {
-  cat("There are no variable pairs with standardized residuals which are larger or equal than the considered threshold 2.58 [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 [@kline]. Therefore, no relationships among the variables are substantially underestimated by the model. ")
+  cat("There are no variable pairs with standardized residuals which are larger or equal than the considered threshold 2.58 Brown (Brown 2015) or correlation residuals which are larger or equal than the considered threshold 0.1 Kline (Kline 2016). Therefore, no relationships among the variables are substantially underestimated by the model. ")
 }
 
 if (nrow(stand_residuals(fit,"neg"))>0 || nrow(corr_residuals(fit,"neg"))>0){
- cat("Following variable pairs have standardized residuals which are smaller or equal than the considered threshold -2.58 [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 [@kline]. In these cases, the covariance relationship between the involved variables is probably overestimated: ")
+ cat("Following variable pairs have standardized residuals which are smaller or equal than the considered threshold -2.58 Brown (Brown 2015) or correlation residuals which are smaller or equal than the considered threshold -0.1 Kline (Kline 2016). In these cases, the covariance relationship between the involved variables is probably overestimated: ")
   both <- rbind(stand_residuals(fit,"neg"),corr_residuals(fit,"neg"))
   both <- both[order(both[,1],both[,2]),]
   both <- both[complete.cases(both),]
@@ -958,7 +958,7 @@ if (nrow(stand_residuals(fit,"neg"))>0 || nrow(corr_residuals(fit,"neg"))>0){
   knitr::kable(both, col.names=NULL, caption = "Pair(s) with Overestimated Covariance",linesep = '', longtable=T)  %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else {
-  cat("There are no variable pairs with standardized residuals which are smaller or equal than the considered threshold -2.58 [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 [@kline]. Therefore, no relationships among the variables are substantially overestimated by the model. ")
+  cat("There are no variable pairs with standardized residuals which are smaller or equal than the considered threshold -2.58 Brown (Brown 2015) or correlation residuals which are smaller or equal than the considered threshold -0.1 Kline (Kline 2016). Therefore, no relationships among the variables are substantially overestimated by the model. ")
 }
 
 
@@ -969,7 +969,7 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(stand_residuals(fit,"neg"))>0){
 
 ```{r, results="asis", dev="cairo_pdf", eval=mi_indic}
 cat("\n## Modification Indices", fill=TRUE)
-cat("In the interpretation of the modification indices table(s) we rely mostly on [@brown] and [@mi]. We cite from [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ", fill=TRUE)
+cat("In the interpretation of the modification indices table(s) we rely mostly on Brown (Brown 2015) and Saris (Saris 2009). We cite from Brown (Brown 2015): \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ", fill=TRUE)
 cat("\\newline",fill=TRUE)
 cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for error or factor correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\" (see the Abbreviations section). ", fill=TRUE)
 cat("\\newline",fill=TRUE)
@@ -1097,7 +1097,7 @@ if ((sum(pvalues_stand > 0.05, na.rm = TRUE)==0) && (sum(abs(estim_stand) < 0.4,
   pe_stand_indic = "10" 
 } 
 
-cat("This cutoff-value is considered in some CFA research areas a magnitude that is substantively meaningful [@brown]. Please consider also cutoff-values from your particular research area when interpreting the factor loadings. ")
+cat("This cutoff-value is considered in some CFA research areas a magnitude that is substantively meaningful Brown (Brown 2015). Please consider also cutoff-values from your particular research area when interpreting the factor loadings. ")
 cat("We summarize the interpretation of the completely standardized factor loadings in the next table: ")
 
 
@@ -1261,7 +1261,7 @@ factornonsig <- discr[which(discr$`Pr(>Chisq)`>0.05),]
 
 # Text 
 cat("\n### Factor Discriminant Validity", fill=TRUE)
-cat("As noted by [@brown], \"the interpretability of the size and statistical significance of factor intercorrelations depends on the specific research context. \"")
+cat("As noted by Brown (Brown 2015), \"the interpretability of the size and statistical significance of factor intercorrelations depends on the specific research context. \"")
 if (sum(discr$`Pr(>Chisq)` > 0.05, na.rm=TRUE)==0){
   intercorr_indic = 0
   cat(" Though, the largest (absolute) estimated factor intercorrelation within the section \"Completely Standardized Parameter Estimates\" is",round(max_corr,2)," which we regard as a proof of a reasonable discriminant validity. Moreover, the statistical test(s) for factor discriminant validity are statistically significant at 5% type I error. ")
@@ -1352,7 +1352,7 @@ cat("In case of missing values and estimation via FIML, a meanstructure i.e. the
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
 # Factor Reliability (completely stand.)
 cat("\n## Factor Reliability", fill=TRUE)
-cat("The table \"Factor Reliability\" contains the omega measures of factor reliability given by Bentler (Bentler, 1972, 2009) and McDonald (McDonald, 1999) and the average variance extracted (AVE). The interpretatibility of the reliability measures depend on the specific research context. ")
+cat("The table \"Factor Reliability\" contains the omega measures of factor reliability and the average variance extracted (AVE). The interpretatibility of the reliability measures depends on the specific research context. ")
 
 if (sum(rel_transpose$`Omega (Bentler)`< 0.59)==0 && sum(rel_transpose$`Omega (McDonald)`< 0.59)==0 && sum(rel_transpose$AVE < 0.49, na.rm=TRUE)==0){
   cat("In some fields of research, omega values greater or equal than 0.6 and AVE values greater or equal than 0.5 (fulfilled by and large in your case) could be sufficient. ")
@@ -1500,7 +1500,15 @@ cat("\n# Final Comment",fill=TRUE)
 cat("Please consider that this report depends on hard-coded cutoff-values which may be too liberal or too conservative for your research area. The automatic computation and interpretation delivered by the Statsomat app should not completely replace the classical, made by humans graphical exploratory data analysis and statistical analysis. There may be data cases for which the Statsomat does not deliver the most optimal solution or output interpretation.")
 ```    
    
-\pagebreak   
+\pagebreak
+
+```{r, results="asis", dev="cairo_pdf", eval=eval5, echo = FALSE}
+cat("\n# Statistical Methods",fill=TRUE)
+cat("The statistical analysis was done using R (R Core Team 2019) and following main R packages: lavaan (Rosseel 2012),
+corrplot (Wei and Simko 2017), semPlot (Epskamp 2019), semTools (Jorgensen et al. 2020), energy (Rizzo and Szekely
+2019), DDoutlier (Madsen 2018).
+", fill=TRUE)
+```    
    
 ```{r, results="asis", dev="cairo_pdf", eval=mi_indic}
 cat("\n# Abbreviations", fill=TRUE)

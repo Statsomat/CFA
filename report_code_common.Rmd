@@ -232,6 +232,37 @@ cat("\\newline ")
 cat("THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.")
 ```
 
-```{r, results="asis", eval=eval_code}
+  
+```{r, results="asis", eval = eval_code}
 cat("\n# References", fill=TRUE)
+cat("Brown, Timothy A. 2015. Confirmatory Factor Analysis for Applied Research. The Guilford Press. ", fill=TRUE)
+cat("\\newline ")
+cat("Epskamp, Sacha. 2019. SemPlot: Path Diagrams and Visual Analysis of Various Sem Packages’ Output. https://CRAN.
+R-project.org/package=semPlot.", fill=TRUE)
+cat("\\newline ")
+cat("Jorgensen, Terrence D., Sunthud Pornprasertmanit, Alexander M. Schoemann, and Yves Rosseel. 2020. semTools:
+Useful Tools for Structural Equation Modeling. https://CRAN.R-project.org/package=semTools.", fill=TRUE)
+cat("\\newline ")
+cat("Kline, Rex B. 2016. Principles and Practice of Structural Equation Modeling. The Guilford Press.", fill=TRUE)
+cat("\\newline ")
+cat("Madsen, Jacob H. 2018. DDoutlier: Distance & Density-Based Outlier Detection. https://CRAN.R-project.org/package=
+DDoutlier.", fill=TRUE)
+cat("\\newline ")
+cat("R Core Team. 2019. R: A Language and Environment for Statistical Computing. Vienna, Austria: R Foundation for
+Statistical Computing. https://www.R-project.org/.", fill=TRUE)
+cat("\\newline ")
+cat("Rizzo, Maria, and Gabor Szekely. 2019. Energy: E-Statistics: Multivariate Inference via the Energy of Data. https:
+//CRAN.R-project.org/package=energy.", fill=TRUE)
+cat("\\newline ")
+cat("Rosseel, Yves. 2012. “lavaan: An R Package for Structural Equation Modeling.” Journal of Statistical Software 48 (2):
+1–36. http://www.jstatsoft.org/v48/i02/.", fill=TRUE)
+cat("\\newline ")
+cat("Wei, Taiyun, and Viliam Simko. 2017. R Package ”Corrplot”: Visualization of a Correlation Matrix. https://github.com/
+taiyun/corrplot.", fill=TRUE)
+cat("\\newline ")
+cat("Willem E. Saris, William M. van der Veld, Albert Satorra. 2009. “Testing Structural Equation Models or Detection of
+Misspecifications?” Structural Equation Modeling A Multidisciplinary Journal 16: 561–82. https://www.tandfonline.
+com/doi/abs/10.1080/10705510903203433.", fill=TRUE)
 ```
+ 
+

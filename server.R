@@ -1,5 +1,5 @@
 # Define server logic 
-shinyServer(function(input, output, session) {
+function(input, output, session) {
   
   # Reload app if disconnected
   observeEvent(input$disconnect, {
@@ -9,10 +9,19 @@ shinyServer(function(input, output, session) {
   # Reload app button
   observeEvent(input$reload,session$reload())
   
-  session_id <- reactive({
-    url_params <- parseQueryString(session$clientData$url_search)
-    url_params[["session_id"]]
-  })
+  # On session end
+  session$onSessionEnded(stopApp)
+  
+  # Upload message
+  observeEvent(input$file, {
+    showModal(modalDialog(
+      title = "Reading Data", "Please Wait", 
+      footer = NULL,
+      fade = FALSE,
+      easyClose = TRUE,
+    ))
+    Sys.sleep(2)
+  }, priority=100)
   
   
   # Upload data
@@ -35,15 +44,15 @@ shinyServer(function(input, output, session) {
       
       validate(need(tryCatch(datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec=".", encoding = "unknown", 
                                            data.table = FALSE, na.strings = ""), warning=function(w) {}),
-                    "Error. The file cannot be read unambigously. Check the characters for the field separator, quote or decimal."
+                    "Error. The file cannot be read unambigously. Check the characters for the field separator, quote or decimal. Remove blank lines. "
                     ))
 
       validate(need(try(iconv(colnames(datainput1), guess_encoding(input$file$datapath)[[1]][1], "UTF-8")),
-                        "Error. Encoding cannot be converted. Please try other upload options."))
+                        "Error. Encoding cannot be converted. Please revise your data or try other upload options."))
       
                
       validate(need(try(sapply(datainput1[, sapply(datainput1, is.character)], function(col) iconv(col, guess_encoding(input$file$datapath)[[1]][1], "UTF-8"))),
-                        "Error. Encoding cannot be converted. Please try other upload options."))
+                        "Error. Encoding cannot be converted. Please revise your data or try other upload options."))
       
     }
     
@@ -61,7 +70,7 @@ shinyServer(function(input, output, session) {
       
       validate(need(tryCatch(datainput1 <- fread(input$file$datapath, header = "auto", sep="auto", dec=".", encoding = "unknown", 
                                                  data.table = FALSE, na.strings = ""), warning=function(w) {}),
-                    "Error. The file cannot be read unambigously. Check the characters for the field separator, quote or decimal."
+                    "Error. The file cannot be read unambigously. Check the characters for the field separator, quote or decimal. Remove blank lines. "
       ))
 
    }
@@ -146,22 +155,37 @@ shinyServer(function(input, output, session) {
     
     req(datainput())
     
+    removeModal()
+    
     chooserInput("selection1", "Available", "Selected",
                  colnames(datainput()), c(), size = 15, multiple = TRUE)
     
   })
   
   
-  # Stop if column names not distinct
+  # Stop if column names not distinct or if too many columns selected
   observe({
     
-    req(input$file, datainput(), input$selection1$right)
+    req(input$file, datainput())
+    
+    removeModal()
     
     if (length(unique(input$selection1$left)) != length(input$selection1$left)){
-      
-      showNotification("Error in selection: The columns names of the dataset are not distinct. Please rename columns and restart the app.", duration=20)
-      input$selection1$right <- NULL
-      
+      showNotification("Error in selection: The columns names of the dataset are not distinct. Please rename columns and restart the app.", duration=30)
+      Sys.sleep(5)
+      session$reload()
+    }
+    
+    if (nrow(datainput()) > 1000){
+      showNotification("Error: Maximum 1000 rows allowed. ", duration=30)
+      Sys.sleep(5)
+      session$reload()
+    }
+    
+    if (length(input$selection1$right) > 15 ){
+      showNotification("Error: Maximum 15 variables allowed.", duration=30)
+      Sys.sleep(5)
+      session$reload()
     }
     
   })
@@ -255,14 +279,13 @@ shinyServer(function(input, output, session) {
     
       })
       
-      showNotification("Now you can download the report.",duration=10)
+      showNotification("Now you can download the report.", duration=20)
       
     },
     
     error=function(e) {
       # Report not available 
-      showNotification("Something went wrong. In most cases, this is due to severe problems with your data and/or model syntax. 
-                       Please try again. ",duration=20)
+      showNotification("Something went wrong. Please contact the support@statsomat.com. ",duration=20)
       }
     )
     
@@ -291,4 +314,4 @@ shinyServer(function(input, output, session) {
   )
   
   
-})
+}

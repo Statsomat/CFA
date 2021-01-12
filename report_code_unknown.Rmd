@@ -56,7 +56,7 @@ if (exists("eval5")) eval_code <- eval5 else eval_code <- FALSE
 
 ```{r, results="asis", eval=eval_code, echo=FALSE}
 cat("\n# R Packages", fill=TRUE)
-cat("The statistical numbers and graphics within this report are generated with following R and packages versions:", fill=TRUE)
+cat("To run the R code you need to install following packages. The version number may play in some cases a role.", fill=TRUE)
 cat("\\newline ")
 cat("R version:", paste0(R.Version()[c("major","minor")], collapse = "."), fill=TRUE)
 cat("\\newline ")

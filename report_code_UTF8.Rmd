@@ -1,5 +1,5 @@
 ---
-title: "Correlation and Association"
+title: "Confirmatory Factor Analysis"
 author: "Statsomat.com"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output:
@@ -16,55 +16,72 @@ params:
   decimal: NA
   enc_guessed: NA
   vars1: NA
-  vars2: NA
+  model: NA
+  direction: NA
 header-includes:
    - \usepackage{xcolor}
    - \setmainfont[BoldFont=FiraSans-Bold, Extension=.otf]{FiraSans-Regular}
    - \usepackage{booktabs}
    - \usepackage{longtable}
+   - \usepackage{float}
 ---
 
 
-**Warning: The automatic computation and interpretation delivered by the Statsomat should not completely replace the classical, made by humans graphical exploratory data analysis and statistical analysis. There may be data cases for which the Statsomat does not deliver the most optimal solution.**
+```{r, dev="cairo_pdf", results="asis", echo = FALSE}
+# Check model syntax 
+msyntax <- TRUE
+model <- params$model
+modelsplit <- unlist(strsplit(model, split="\n"))
+modelsplit <- modelsplit[modelsplit != ""]
+modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
+for (i in 1:length(modelsplit)){
+  if (grepl("=~",modelsplit[i])==FALSE && grepl("~~",modelsplit[i])==FALSE && grepl("~1",modelsplit[i])==FALSE &&
+      grepl("#",modelsplit[i])==FALSE){
+    cat("\\large Error: Only model lines containing following lavaan model syntax operators are allowed: =\\~,\\~\\~,\\~1", fill=TRUE)
+    msyntax <- FALSE
+    break
+  } 
+}
+```     
 
 
-```{r child = 'report_kernel.Rmd'}
+```{r child = 'report_kernel.Rmd', eval=msyntax}
 ```
+
 
 ```{r include=FALSE}
-eval_code=FALSE
-if (exists("df_num")){
-  if (ncol(df_num)>0L & nrow(df_num)>=5){
-    if (sum(rateunique_df) >= 2L){
-eval_code=TRUE
-}}}
+if (exists("eval5")) eval_code <- eval5 else eval_code <- FALSE
 ```
+  
 
-
-```{r, results="asis", eval=eval_code}
+```{r, results="asis", eval=eval_code, echo=FALSE}
 cat("\n# R Packages", fill=TRUE)
-cat("The statistical numbers and graphics within this report are generated with following R and packages versions:", fill=TRUE)
+cat("To run the R code you need to install following packages. The version number may play in some cases a role.", fill=TRUE)
 cat("\\newline ")
 cat("R version:", paste0(R.Version()[c("major","minor")], collapse = "."), fill=TRUE)
 cat("\\newline ")
 cat("Package data.table, version:", paste0(packageVersion("data.table")), fill=TRUE)
 cat("\\newline ")
-cat("Package boot, version:", paste0(packageVersion("boot")), fill=TRUE)
+cat("Package knitr, version:", paste0(packageVersion("knitr")), fill=TRUE)
 cat("\\newline ")
-cat("Package car, version:", paste0(packageVersion("car")), fill=TRUE)
+cat("Package lavaan, version:", paste0(packageVersion("lavaan")), fill=TRUE)
 cat("\\newline ")
-cat("Package DescTools, version:", paste0(packageVersion("DescTools")), fill=TRUE)
+cat("Package semPlot, version:", paste0(packageVersion("semPlot")), fill=TRUE)
 cat("\\newline ")
-cat("Package testforDEP, version:", paste0(packageVersion("testforDEP")), fill=TRUE)
+cat("Package semTools, version:", paste0(packageVersion("semTools")), fill=TRUE)
 cat("\\newline ")
-cat("Package energy, version:", paste0(packageVersion("energy")), fill=TRUE)
+cat("Package corrplot, version:", paste0(packageVersion("corrplot")), fill=TRUE)
 cat("\\pagebreak")
 ```
 
-```{r, results="asis", eval=eval_code}
+
+\pagestyle{empty} 
+
+
+```{r, results="asis", eval=eval_code, echo=FALSE}
 cat("\n# R Code ", fill=TRUE)
 cat("\\normalsize\\textcolor{blue}{Instructions\\newline
-We assume that your data is saved here: \"C:\\textbackslash \". Otherwise, you can change the path to your data in the code below. For Windows users, avoid to use paths containing white spaces. If not already available, please install R, RStudio and the requiered packages mentioned on the previous page. Copy the code below, paste it carefully in a new R Script within RStudio and run it. Do not copy and paste the page numbers from the PDF report. If necessary, enlarge the console for a better view of the output. }
+If not already available, please install R, RStudio and the requiered packages listed on the previous page. We assume that your data is stored at this location: \"C:\\textbackslash \". If not, please change the path to your data in the code below. For Windows users, avoid to use paths containing white spaces. Copy the code below, paste it carefully in a new R Script within RStudio and run it. The numerical results will be printed in the Console. The graphs can be accessed in the Plots tab. }
 \\newline")
 ```
 
@@ -75,25 +92,25 @@ pre.whites {
 </style>
 
 ```{whites, eval=FALSE, echo = eval_code}
-options(na.action=na.omit) # Option for missing values 
-
 # Import required libraries
-library(data.table)
-library(boot) 
-library(car) 
-library(DescTools) 
-library(testforDEP) 
-library(energy) 
+suppressPackageStartupMessages(library(data.table))
+suppressPackageStartupMessages(library(knitr))
+suppressPackageStartupMessages(library(lavaan))
+suppressPackageStartupMessages(library(semPlot))
+suppressPackageStartupMessages(library(semTools))
+suppressPackageStartupMessages(library(corrplot))
 ```
 
-```{r, results="asis", eval=eval_code}
+
+```{r, results="asis", eval=eval_code, echo=FALSE}
 cat("\\# `Define the path to your data (please remark the forward slash)`")
 cat("\\newline ")  
 cat("`filepath <-")
 cat(paste0("\"C:/",params$filename[1],"\"`"))
 ```
 
-```{r, results="asis", eval=eval_code}
+
+```{r, results="asis", eval=eval_code, echo=FALSE}
 if (params$decimal == "auto"){
   cat("\\# `Upload the data`")
   cat("\\newline ")  
