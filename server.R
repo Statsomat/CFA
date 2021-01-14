@@ -176,7 +176,7 @@ function(input, output, session) {
       session$reload()
     }
     
-    if (nrow(datainput()) > 1000){
+    if (nrow(datainput()) > 10000){
       showNotification("Error: Maximum 1000 rows allowed. ", duration=30)
       Sys.sleep(5)
       session$reload()

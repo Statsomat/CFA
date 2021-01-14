@@ -8,23 +8,59 @@ knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE,
 ```
 
 
+
 ```{r}
+# Get selected data
+df <- params$data
+
+# Initialize further chunks
+eval0 <- FALSE
+
+tryCatch({
+  df <- df[,params$vars1,drop=FALSE]
+  df2 <- df
+  eval0 <- TRUE
+}, error=function(e) {
+  stop(safeError("Variables cannot be selected. "))
+})
+
+# Possible error reason
+library(knitr) 
+if (length(setdiff(params$vars1,colnames(df))) >0) {
+  cat("Please try other column names for the following columns: ")
+  equal <- intersect(colnames(df),params$vars1)
+  kable(setdiff(params$vars1,equal),col.names = "Column")
+}
+```
+
+
+```{r, eval=eval0}
 # Try to extract model variables from lavaan model
 library(lavaan)
-df <- params$data
 model <- params$model
 tryCatch({
   extract <- cfa(model, data=df, estimator="ML", std.ov=TRUE, std.lv=TRUE) 
   modelvars <- extract@pta$vnames$ov[[1]]
   df <- df[,modelvars,drop=FALSE]
+  df2 <- df
 }, error=function(e) {
-  cat("")
+ cat("")
 })
 ```
 
-```{r}
-# Prepare DF Work
+```{r, eval=eval0}
+# Higher-order models not allowed 
+tryCatch({
+  if (length(extract@pta$vnames$lv.x[[1]])>0){
+    eval0 <- FALSE
+    stop()
+}}, error= function(e) {
+  stop(safeError("Higher-order models not allowed by this app. "))
+})
+```
 
+
+```{r}
 # Call used libraries 
 library(knitr) # kable
 library(fastDummies) # make dummies
@@ -52,7 +88,10 @@ addings <- FALSE
 callforaction <- FALSE
 cov_underestimated <- FALSE
 respecification <- FALSE
+```
 
+
+```{r, eval=eval0}
 tryCatch({
 
 # Drop columns if all observations are missing 
@@ -171,13 +210,15 @@ if (exists("col_names_missing")){
 
 
 cat("Variables considered continuous: ", fill=TRUE)
-if (exists("df_cont") && ncol(df_cont)>0){
+if (exists("df_cont")){
+  if (ncol(df_cont)>0){
     cat(ncol(df_cont),fill=TRUE)
     knitr::kable(cols_continuous, col.names = "Variables considered continuous", linesep = '', longtable=T) %>%
       kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
   } else {
     cat("0", fill=TRUE)
     cat("\\newline",fill=TRUE) 
+  }
 }
 
 
@@ -222,7 +263,9 @@ check_reading <- function(col){
   numeric <- !is.na(as.numeric(col))
   return(sum(numeric)/sum(!is.na(col)))
 }
-numeric_percent <- sapply(df_dummy, function(col) check_reading(col))
+
+df_char2 <- df[which(sapply(df2, is.character) == 1L)]
+numeric_percent <- sapply(df_char2, function(col) check_reading(col))
 
 if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
   cat("**Warning: More than 90% of the values of these columns could be treated as numeric. Nevertheless, because of some values or the selected decimal character, the columns must be treated as discrete. Are all the values plausible? Please check the data once more before uploading! Column(s):**", names(numeric_percent[(numeric_percent>0.9)]), fill=TRUE)
@@ -237,19 +280,19 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 if (exists("df_cont")){
   if (exists("modelvars")){
     if (length(modelvars) > length(colnames(df_cont))){
-      cat("**Error: Some observed variables are not considered to be continuous. Maximum Likelihood is not the propper estimation method. Other estimation methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
+      cat("**Error: Some observed variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
       cat("\\newline",fill=TRUE) 
     } else {
       eval2 <- TRUE
     }
   } else if (ncol(df_cont) < ncol(df)){
-    cat("**Error: Some uploaded variables are not considered to be continuous. Other estimation methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
+    cat("**Error: Some uploaded variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
     cat("\\newline",fill=TRUE) 
   } else {
     eval2 <- TRUE
   }
 } else {
-  cat("**Error: The uploaded variables are not considered to be continuous. Other estimation methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
+  cat("**Error: The uploaded variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
   cat("\\newline",fill=TRUE) 
 }
 
@@ -286,12 +329,12 @@ if (length(which(complete_rate < 1 & complete_rate > 0.95)) != 0L){
 # Outliers
 try({
   if (length(knnoutlier(df_cont))>0){
-    cat("Outliers: Based on an analysis of the variables considered continuous, we suspect outliers in the data. If observations are erroneous, you could drop them and restart the app. Outliers may affect negatively the execution or the results of the CFA. These are the suspected row numbers: ")
+    cat("Outliers: We suspect outliers in the data. If observations are erroneous, you could drop them and restart the app. Outliers may affect negatively the execution or the results of the CFA. These are the suspected row numbers: ")
     outliers_rows <- df_cont[knnoutlier(df_cont),]
     knitr::kable(outliers_rows, linesep = '', longtable=T, caption="Row(s) With Suspected Outliers", digits=1) %>%
       kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
   } else {
-    cat("Outliers: Based on an analysis of the variables considered continuous, we cannot identify any significant outliers. ", fill=TRUE)
+    cat("Outliers: We cannot identify any statistically significant outliers. ", fill=TRUE)
     cat("\\newline",fill=TRUE) 
   }
 }, silent=TRUE)
@@ -313,7 +356,7 @@ tryCatch({
     cat("Estimation Method: Maximum Likelihood. ", fill=TRUE)
     cat("\\newline",fill=TRUE) 
   } else {
-    cat("**Error: We cannot assume an approximately (multivariate) normal distribution of the data, which is needed in this app. You could try to apply suitable transformations to the data before using this app. Other methods for non-normally distributed data will be implemented soon. For consultancy contact: support@statsomat.com**")
+    cat("**Error: We cannot assume an approximately (multivariate) normal distribution of the data, which is required in this app. You could try to apply suitable transformations to the data before using this app. Other CFA methods for non-normally distributed data will be implemented soon. For consultancy contact: support@statsomat.com**")
   }
 }, 
 warning=function(w){
@@ -599,7 +642,7 @@ semPaths(fit, what="std", intercepts = FALSE)
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n# Interpretation", fill=TRUE)
 cat("\n## Goodness of Fit Indices", fill=TRUE)
-cat("We consider some of the model fit indices from the Model Fit Summary section to check the goodness-of-fit of the model. To decide for an acceptable or non-acceptable model, we apply thresholds considered in the References: Brown (Brown 2015), Kline (Kline 2016). ", fill=TRUE)
+cat("We consider some of the model fit indices from the Model Fit Summary section to check the goodness-of-fit of the model. To decide for an acceptable or non-acceptable model, we apply thresholds considered in the References: Brown [@brown], Kline [@kline]. ", fill=TRUE)
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
@@ -931,7 +974,7 @@ cat("\\newline",fill=TRUE)
 
 # Misfit areas 
 if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
-  cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 Brown (Brown 2015) or correlation residuals which are larger or equal than the considered threshold 0.1 Kline (Kline 2016). In these cases, the covariance relationship between the involved variables is probably underestimated: ")
+  cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 Brown [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 Kline [@kline]. In these cases, the covariance relationship between the involved variables is probably underestimated: ")
   cov_underestimated <- TRUE
   both <- rbind(stand_residuals(fit,"pos"),corr_residuals(fit,"pos"))
   both <- both[order(both[,1],both[,2]),]
@@ -943,11 +986,11 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
   knitr::kable(both, col.names=NULL, caption = "Pair(s) with Underestimated Covariance",linesep = '', longtable=T)  %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else {
-  cat("There are no variable pairs with standardized residuals which are larger or equal than the considered threshold 2.58 Brown (Brown 2015) or correlation residuals which are larger or equal than the considered threshold 0.1 Kline (Kline 2016). Therefore, no relationships among the variables are substantially underestimated by the model. ")
+  cat("There are no variable pairs with standardized residuals which are larger or equal than the considered threshold 2.58 Brown [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 Kline [@kline]. Therefore, no relationships among the variables are substantially underestimated by the model. ")
 }
 
 if (nrow(stand_residuals(fit,"neg"))>0 || nrow(corr_residuals(fit,"neg"))>0){
- cat("Following variable pairs have standardized residuals which are smaller or equal than the considered threshold -2.58 Brown (Brown 2015) or correlation residuals which are smaller or equal than the considered threshold -0.1 Kline (Kline 2016). In these cases, the covariance relationship between the involved variables is probably overestimated: ")
+ cat("Following variable pairs have standardized residuals which are smaller or equal than the considered threshold -2.58 Brown [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 Kline [@kline]. In these cases, the covariance relationship between the involved variables is probably overestimated: ")
   both <- rbind(stand_residuals(fit,"neg"),corr_residuals(fit,"neg"))
   both <- both[order(both[,1],both[,2]),]
   both <- both[complete.cases(both),]
@@ -958,7 +1001,7 @@ if (nrow(stand_residuals(fit,"neg"))>0 || nrow(corr_residuals(fit,"neg"))>0){
   knitr::kable(both, col.names=NULL, caption = "Pair(s) with Overestimated Covariance",linesep = '', longtable=T)  %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else {
-  cat("There are no variable pairs with standardized residuals which are smaller or equal than the considered threshold -2.58 Brown (Brown 2015) or correlation residuals which are smaller or equal than the considered threshold -0.1 Kline (Kline 2016). Therefore, no relationships among the variables are substantially overestimated by the model. ")
+  cat("There are no variable pairs with standardized residuals which are smaller or equal than the considered threshold -2.58 Brown [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 Kline [@kline]. Therefore, no relationships among the variables are substantially overestimated by the model. ")
 }
 
 
@@ -969,7 +1012,7 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(stand_residuals(fit,"neg"))>0){
 
 ```{r, results="asis", dev="cairo_pdf", eval=mi_indic}
 cat("\n## Modification Indices", fill=TRUE)
-cat("In the interpretation of the modification indices table(s) we rely mostly on Brown (Brown 2015) and Saris (Saris 2009). We cite from Brown (Brown 2015): \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ", fill=TRUE)
+cat("In the interpretation of the modification indices table(s) we rely mostly on Brown [@brown] and Saris [@mi]. We cite from Brown [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ", fill=TRUE)
 cat("\\newline",fill=TRUE)
 cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for error or factor correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\" (see the Abbreviations section). ", fill=TRUE)
 cat("\\newline",fill=TRUE)
@@ -1097,7 +1140,7 @@ if ((sum(pvalues_stand > 0.05, na.rm = TRUE)==0) && (sum(abs(estim_stand) < 0.4,
   pe_stand_indic = "10" 
 } 
 
-cat("This cutoff-value is considered in some CFA research areas a magnitude that is substantively meaningful Brown (Brown 2015). Please consider also cutoff-values from your particular research area when interpreting the factor loadings. ")
+cat("This cutoff-value is considered in some CFA research areas a magnitude that is substantively meaningful Brown [@brown]. Please consider also cutoff-values from your particular research area when interpreting the factor loadings. ")
 cat("We summarize the interpretation of the completely standardized factor loadings in the next table: ")
 
 
@@ -1261,7 +1304,7 @@ factornonsig <- discr[which(discr$`Pr(>Chisq)`>0.05),]
 
 # Text 
 cat("\n### Factor Discriminant Validity", fill=TRUE)
-cat("As noted by Brown (Brown 2015), \"the interpretability of the size and statistical significance of factor intercorrelations depends on the specific research context. \"")
+cat("As noted by Brown [@brown], \"the interpretability of the size and statistical significance of factor intercorrelations depends on the specific research context. \"")
 if (sum(discr$`Pr(>Chisq)` > 0.05, na.rm=TRUE)==0){
   intercorr_indic = 0
   cat(" Though, the largest (absolute) estimated factor intercorrelation within the section \"Completely Standardized Parameter Estimates\" is",round(max_corr,2)," which we regard as a proof of a reasonable discriminant validity. Moreover, the statistical test(s) for factor discriminant validity are statistically significant at 5% type I error. ")
@@ -1504,10 +1547,8 @@ cat("Please consider that this report depends on hard-coded cutoff-values which 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5, echo = FALSE}
 cat("\n# Statistical Methods",fill=TRUE)
-cat("The statistical analysis was done using R (R Core Team 2019) and following main R packages: lavaan (Rosseel 2012),
-corrplot (Wei and Simko 2017), semPlot (Epskamp 2019), semTools (Jorgensen et al. 2020), energy (Rizzo and Szekely
-2019), DDoutlier (Madsen 2018).
-", fill=TRUE)
+cat("The statistical analysis was done using R [@stats] and following main R packages: lavaan [@lavaan],
+corrplot [@corrplot], semPlot [@semplot], semTools [@semtools], energy [@energy], DDoutlier [@ddout].", fill=TRUE)
 ```    
    
 ```{r, results="asis", dev="cairo_pdf", eval=mi_indic}

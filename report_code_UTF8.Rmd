@@ -8,7 +8,7 @@ output:
     toc: true
     toc_depth: 2
 bibliography: ["references.bib"]
-fontsize: 11pt
+fontsize: 9pt
 params:
   data: NA
   filename: NA
@@ -32,12 +32,12 @@ header-includes:
 msyntax <- TRUE
 model <- params$model
 modelsplit <- unlist(strsplit(model, split="\n"))
-modelsplit <- modelsplit[modelsplit != ""]
 modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
+modelsplit <- modelsplit[modelsplit != ""]
 for (i in 1:length(modelsplit)){
   if (grepl("=~",modelsplit[i])==FALSE && grepl("~~",modelsplit[i])==FALSE && grepl("~1",modelsplit[i])==FALSE &&
       grepl("#",modelsplit[i])==FALSE){
-    cat("\\large Error: Only model lines containing following lavaan model syntax operators are allowed: =\\~,\\~\\~,\\~1", fill=TRUE)
+    cat("Error: Only model lines containing following lavaan model syntax operators are allowed: =\\~,\\~\\~,\\~1", fill=TRUE)
     msyntax <- FALSE
     break
   } 
