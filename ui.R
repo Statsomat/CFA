@@ -68,7 +68,7 @@ shinyUI(fluidPage(
   
   br(),
   
-  tags$div(a(img(src='Logo.jpg', width=150), href="https://www.statsomat.com", target="_blank")),
+  tags$div(a(img(src='Logo.jpg', width=200), href="https://www.statsomat.com", target="_blank")),
   
   h1("Confirmatory Factor Analysis", 
      style = "font-family: 'Source Sans Pro';
@@ -76,7 +76,7 @@ shinyUI(fluidPage(
      background-color: #396e9f;
      padding: 20px;
      margin-bottom: 0px;"),
-  h3("Experimental Beta Version", 
+  h5("Experimental Beta Version", 
      style = "font-family: 'Source Sans Pro';
      color: #fff; text-align: center;
      background-color: #2fa42d;

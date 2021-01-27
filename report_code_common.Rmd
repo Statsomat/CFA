@@ -2,6 +2,8 @@
 title: "Confirmatory Factor Analysis"
 ---
 
+\normalsize
+
 ```{whites, eval=FALSE, echo = eval_code}
 # Model Definition (please remark the single quotation marks enclosing the equations)
 model <- 
@@ -79,7 +81,7 @@ r2
 
 ```{whites, eval=FALSE, echo = nfactors_indic}
 ## Factor Discriminant Validity
-discr <- suppressMessages(discriminantValidity(fit, cutoff = 0.85))
+discr <- suppressWarnings(discriminantValidity(fit, cutoff = 0.85))
 discr <- discr[,c(1:4,11:13)]
 discr <- discr[!is.na(discr$`Pr(>Chisq)`),]
 kable(discr,caption="Factor Discriminant Validity Test at Cutoff 0.85",digits=3,

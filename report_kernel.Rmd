@@ -8,58 +8,6 @@ knitr::opts_chunk$set(echo = FALSE, comment='', message = FALSE, error = TRUE,
 ```
 
 
-
-```{r}
-# Get selected data
-df <- params$data
-
-# Initialize further chunks
-eval0 <- FALSE
-
-tryCatch({
-  df <- df[,params$vars1,drop=FALSE]
-  df2 <- df
-  eval0 <- TRUE
-}, error=function(e) {
-  stop(safeError("Variables cannot be selected. "))
-})
-
-# Possible error reason
-library(knitr) 
-if (length(setdiff(params$vars1,colnames(df))) >0) {
-  cat("Please try other column names for the following columns: ")
-  equal <- intersect(colnames(df),params$vars1)
-  kable(setdiff(params$vars1,equal),col.names = "Column")
-}
-```
-
-
-```{r, eval=eval0}
-# Try to extract model variables from lavaan model
-library(lavaan)
-model <- params$model
-tryCatch({
-  extract <- cfa(model, data=df, estimator="ML", std.ov=TRUE, std.lv=TRUE) 
-  modelvars <- extract@pta$vnames$ov[[1]]
-  df <- df[,modelvars,drop=FALSE]
-  df2 <- df
-}, error=function(e) {
- cat("")
-})
-```
-
-```{r, eval=eval0}
-# Higher-order models not allowed 
-tryCatch({
-  if (length(extract@pta$vnames$lv.x[[1]])>0){
-    eval0 <- FALSE
-    stop()
-}}, error= function(e) {
-  stop(safeError("Higher-order models not allowed by this app. "))
-})
-```
-
-
 ```{r}
 # Call used libraries 
 library(knitr) # kable
@@ -72,6 +20,7 @@ library(DDoutlier)
 library(energy)
 
 # Initialize next computations
+eval0 <- FALSE
 eval <- FALSE
 eval2 <- FALSE
 eval3 <- FALSE
@@ -88,6 +37,52 @@ addings <- FALSE
 callforaction <- FALSE
 cov_underestimated <- FALSE
 respecification <- FALSE
+```
+
+
+```{r}
+# Get selected data
+df <- params$data
+
+tryCatch({
+  df <- df[,params$vars1,drop=FALSE]
+  df2 <- df
+  eval0 <- TRUE
+}, error=function(e) {
+  stop(safeError("Variables cannot be selected. "))
+})
+
+# Possible error reason
+if (length(setdiff(params$vars1,colnames(df))) >0) {
+  cat("Please try other column names for the following columns: ")
+  equal <- intersect(colnames(df),params$vars1)
+  kable(setdiff(params$vars1,equal),col.names = "Column")
+}
+```
+
+
+```{r, eval=eval0}
+# Try to extract model variables from lavaan model
+model <- params$model
+tryCatch({
+  extract <- cfa(model, data=df, estimator="ML", std.ov=TRUE, std.lv=TRUE) 
+  modelvars <- extract@pta$vnames$ov[[1]]
+  df <- df[,modelvars,drop=FALSE]
+  df2 <- df
+}, error=function(e) {cat("")}
+)
+```
+
+
+```{r, eval=eval0}
+# Higher-order models not allowed 
+tryCatch({
+  if (length(extract@pta$vnames$lv.nox[[1]])>0){
+    eval0 <- FALSE
+    stop()
+}}, error= function(e) {
+  stop(safeError("Non-exogenous latent variables not allowed by this app. "))
+})
 ```
 
 
@@ -209,16 +204,16 @@ if (exists("col_names_missing")){
 }
 
 
-cat("Variables considered continuous: ", fill=TRUE)
 if (exists("df_cont")){
-  if (ncol(df_cont)>0){
-    cat(ncol(df_cont),fill=TRUE)
-    knitr::kable(cols_continuous, col.names = "Variables considered continuous", linesep = '', longtable=T) %>%
-      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
-  } else {
-    cat("0", fill=TRUE)
-    cat("\\newline",fill=TRUE) 
-  }
+  cat("Variables considered continuous: ", fill=TRUE)
+    if (ncol(df_cont)>0){
+      cat(ncol(df_cont),fill=TRUE)
+      knitr::kable(cols_continuous, col.names = "Variables considered continuous", linesep = '', longtable=T) %>%
+        kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+    } else {
+      cat("0", fill=TRUE)
+      cat("\\newline",fill=TRUE) 
+    }
 }
 
 
@@ -264,7 +259,7 @@ check_reading <- function(col){
   return(sum(numeric)/sum(!is.na(col)))
 }
 
-df_char2 <- df[which(sapply(df2, is.character) == 1L)]
+df_char2 <- df2[which(sapply(df2, is.character) == 1L)]
 numeric_percent <- sapply(df_char2, function(col) check_reading(col))
 
 if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
@@ -280,23 +275,23 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 if (exists("df_cont")){
   if (exists("modelvars")){
     if (length(modelvars) > length(colnames(df_cont))){
-      cat("**Error: Some observed variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
+      cat("**Error: Some observed variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For support contact: support@statsomat.com**")
       cat("\\newline",fill=TRUE) 
     } else {
       eval2 <- TRUE
     }
   } else if (ncol(df_cont) < ncol(df)){
-    cat("**Error: Some uploaded variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
+    cat("**Error: Some uploaded variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For support contact: support@statsomat.com**")
     cat("\\newline",fill=TRUE) 
   } else {
     eval2 <- TRUE
   }
 } else {
-  cat("**Error: The uploaded variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For consultancy contact: support@statsomat.com**")
+  cat("**Error: The uploaded variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For support contact: support@statsomat.com**")
   cat("\\newline",fill=TRUE) 
 }
 
-# eval2 <- TRUE
+# eval2 <- TRUE if you uncomment this, continuous variables will be allowed
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
@@ -356,7 +351,7 @@ tryCatch({
     cat("Estimation Method: Maximum Likelihood. ", fill=TRUE)
     cat("\\newline",fill=TRUE) 
   } else {
-    cat("**Error: We cannot assume an approximately (multivariate) normal distribution of the data, which is required in this app. You could try to apply suitable transformations to the data before using this app. Other CFA methods for non-normally distributed data will be implemented soon. For consultancy contact: support@statsomat.com**")
+    cat("**Error: We cannot assume an approximately (multivariate) normal distribution of the data, which is required in this app. You could try to apply suitable transformations to the data before using this app. Other CFA methods for non-normally distributed data will be implemented soon. For support contact: support@statsomat.com**")
   }
 }, 
 warning=function(w){
@@ -438,7 +433,7 @@ tryCatch({
 cat("\n# Model Equations", fill=TRUE)
 info <- inspect(fit, what="list")
 info <- info[,c(2,3,4,5,8)]
-cat("The following table describes the model equations either as entered by you in the text area (denoted by User=1) or established internally (User=0). The last column shows the free parameters which are estimated.")
+cat("The following table describes the model equations either as entered by you in the text area (denoted by User=1) or established internally (User=0). The last column numbers the free parameters which will be estimated.")
 knitr::kable(info, col.names=c("Left hand side","Operator","Right hand side","User","Free parameter"), linesep = '', longtable=T) %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```               
@@ -509,7 +504,7 @@ tryCatch({
 ```{r, results="asis", dev="cairo_pdf", eval=nfactors_indic}
 cat("\n## Factor Discriminant Validity", fill=TRUE)
 
-knitr::kable(discr,caption="Factor Discriminant Validity Test at Cutoff 0.85",digits=3, row.names = NA, linesep = '', 
+knitr::kable(discr,caption="Factor Discriminant Validity Test at Cutoff Value 0.85",digits=3, row.names = NA, linesep = '', 
              col.names = c("","","","Factor Correlation","Chisq diff","Df diff","P-Value")) %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 ```  
@@ -525,7 +520,7 @@ if (length(fit@pta$vnames$lv.x[[1]])==1) colnames(rel) <- fit@pta$vnames$lv.x[[1
 rel_transpose <- as.data.frame(t(rel))
 rel_transpose <- rel_transpose[1:(nrow(rel_transpose)-1),]
 ## Table  
-opts <- options(knitr.kable.NA = "Not provided in case of cross-loadings")
+opts <- options(knitr.kable.NA = "Not provided if cross-loading")
 knitr::kable(rel,caption="Factor Reliability",digits=2, linesep = '', longtable=T) %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 options(opts)
@@ -641,8 +636,13 @@ semPaths(fit, what="std", intercepts = FALSE)
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n# Interpretation", fill=TRUE)
+```
+
+\small
+
+```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Goodness of Fit Indices", fill=TRUE)
-cat("We consider some of the model fit indices from the Model Fit Summary section to check the goodness-of-fit of the model. To decide for an acceptable or non-acceptable model, we apply thresholds considered in the References: Brown [@brown], Kline [@kline]. ", fill=TRUE)
+cat("We consider some of the model fit indices from the Model Fit Summary section to check the goodness-of-fit of the model. To decide for an acceptable or non-acceptable model, we apply in general thresholds considered in Brown [@brown] and Kline [@kline]. ", fill=TRUE)
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
@@ -974,7 +974,7 @@ cat("\\newline",fill=TRUE)
 
 # Misfit areas 
 if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
-  cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 Brown [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 Kline [@kline]. In these cases, the covariance relationship between the involved variables is probably underestimated: ")
+  cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 Brown [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 Kline [@kline]. In these cases, the covariance relationship between the involved variables is probably underestimated, indicating that additional parameters may be needed in the model: ")
   cov_underestimated <- TRUE
   both <- rbind(stand_residuals(fit,"pos"),corr_residuals(fit,"pos"))
   both <- both[order(both[,1],both[,2]),]
@@ -1002,6 +1002,7 @@ if (nrow(stand_residuals(fit,"neg"))>0 || nrow(corr_residuals(fit,"neg"))>0){
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 } else {
   cat("There are no variable pairs with standardized residuals which are smaller or equal than the considered threshold -2.58 Brown [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 Kline [@kline]. Therefore, no relationships among the variables are substantially overestimated by the model. ")
+ cat("\\newline",fill=TRUE)
 }
 
 
@@ -1014,7 +1015,7 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(stand_residuals(fit,"neg"))>0){
 cat("\n## Modification Indices", fill=TRUE)
 cat("In the interpretation of the modification indices table(s) we rely mostly on Brown [@brown] and Saris [@mi]. We cite from Brown [@brown]: \"The modification index reflects an approximation of how much the overall model Chi² will decrease if the fixed or constrained parameter is freely estimated.\" In other words, if adding a line with a high modification index to the model, i.e. if adding a parameter, the overall goodness-of-fit may be improved. Nevertheless, this should be done only under certain conditions, described in the sequel. ", fill=TRUE)
 cat("\\newline",fill=TRUE)
-cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for error or factor correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\" (see the Abbreviations section). ", fill=TRUE)
+cat("We consider only modification indices greater or equal than 3.84 (which are statistically significant at 5% type I error). Next, we search only for modification indices which achieve a power of minimum 75% in detecting a (relevant) misspecification of at least 0.1 for error or factor correlations, respectively 0.4 for factor loadings. These are characterized in the decision column by the label \"epc:m\" (see the Abbreviations section for more details w.r.t. labels). ", fill=TRUE)
 cat("\\newline",fill=TRUE)
 
 # MI for correlation
@@ -1231,10 +1232,12 @@ if (nrow(pe_stand2[which(pe_stand2$`P-Value` <= 0.05 & abs(pe_stand2$Loading) <=
 number = c(fl,siglevel,stars,signinfo,notrelated,uncertain1,uncertain2)
 
 ## Kable
+cat("\\footnotesize")
 opts <- options(knitr.kable.NA = "")
 x <- knitr::kable(pe_stand2, digits=2, escape = F, linesep = '', caption="Check Completely Standardized Factor Loadings", longtable = T)
 footnote(x, number = number) %>%
   kable_styling(x, position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+cat("\\small")
 ```  
 
 
@@ -1270,7 +1273,7 @@ if (sum(pe3$sig!=pe3$sigc)==0){
 }
 
 # Indicator to show subsequent interpretation
-pe_stand_indic2 <- (pe_stand_indic == "11")
+pe_stand_indic2 <- (pe_stand_indic == "11" || pe_stand_indic == "10")
 ```  
 
 
@@ -1440,35 +1443,39 @@ if (length(which(pe_stand2$Check=="Not ok!"))>0){
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
     cat("Considering the goodness-of-fit indices, the model is acceptable. Moreover, we cannot identify localized areas of ill fit. We conclude that the model is acceptable. ")
   } else if (step1 %in% c(0,1,12)){
-    cat("Considering the goodness-of-fit indices, the model is non-acceptable. Please reconsider your data and the theory behind. ")
+    cat("Considering the goodness-of-fit indices, the model is non-acceptable. We conclude that the model is non-acceptable. Please reconsider your data and the theory behind. ")
   } else {
-    cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Since we cannot identify (significant and relevant) localized areas of ill fit, we assume that the model is acceptable but strongly recommend to replicate the CFA in an independent sample to validate the results. ")
+    cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Since we cannot identify (significant and relevant) localized areas of ill fit, we conclude that the model is acceptable but strongly recommend to replicate the CFA in an independent sample to validate the results. ")
   }
   
 } else if (respecification==TRUE){
   
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
-    cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist localized areas of ill or questionable fit which you should take into consideration. ")
+    cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist some localized areas of questionable fit. Please consider the following recommendations or call for actions. If the recommendations are not supported by your research, then we conclude that the model is acceptable. ")
   } else if (step1 %in% c(0,1,12)){
-    cat("Considering the goodness-of-fit indices, the model is non-acceptable. Moreover, there exist localized areas of ill fit. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations or call for actions. ")
+    cat("Considering the goodness-of-fit indices, the model is non-acceptable. Moreover, there exist localized areas of ill fit. Therefore, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations or call for actions. ")
   } else {
     cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Moreover, there exist localized areas of ill fit. Therefore, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following recommendations or call for actions. ")
   }
 }
 ```
 
-
 ```{r, results="asis", dev="cairo_pdf", eval=callforaction}
-cat("There exist (completely stanardized) factor loadings which are uncertain. Further statistical tests and/or power and sample size analysis not covered by this app are recommended to clarify their importance. Only supported by theory and further statistical analysis, you could drop the corresponding variables from the model. ") 
+cat("There exist (completely standardized) factor loadings which are uncertain. Further statistical tests and/or power and sample size analysis not covered by this app are recommended to clarify their importance. Only supported by theory and further statistical analysis, you could drop the corresponding parameters from the model. ") 
+```
+
+```{r, results="asis", dev="cairo_pdf", eval=respecification}
+cat("**Recommendations**", fill=TRUE)
 ```
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eliminations}
-cat("\n## Eliminations from the Model", fill=TRUE)
+cat("**Eliminations from the Model**", fill=TRUE)
+cat("\\newline",fill=TRUE)
 
 # Observed variables
 if (nrow(pe_stand2[which(pe_stand2$`P-Value` > 0.05 & abs(pe_stand2$Loading) <= 0.4),])>0){
-  cat("**Observed Variables**", fill=TRUE) # Not Relevant
+  cat("**Category Observed Variables**", fill=TRUE) # Not Relevant
  cat("\\newline",fill=TRUE)
   cat("There exist observed variables which are probably not related to the factor(s). If also supported by theory, the corresponding parameter(s) could be dropped from the model. ", fill=TRUE) 
  cat("\\newline",fill=TRUE)
@@ -1477,7 +1484,7 @@ if (nrow(pe_stand2[which(pe_stand2$`P-Value` > 0.05 & abs(pe_stand2$Loading) <= 
 
 # Error Covariances
 if (error_covariances_indic==TRUE && nrow(covariances_error)>0){
-  cat("**Error Covariances**", fill=TRUE) # given by non-sign or < 0.1 residual covariances  
+  cat("**Category Error Covariances**", fill=TRUE) # given by non-sign or < 0.1 residual covariances  
  cat("\\newline",fill=TRUE)
   cat("There exist error covariances resp. correlations which are not statistically significant at 5% type I error or which are very small and below 0.1 (in absolute value). f also supported by theory, the corresponding parameter(s) could be dropped from the model. ", fill=TRUE)
  cat("\\newline",fill=TRUE)
@@ -1485,7 +1492,7 @@ if (error_covariances_indic==TRUE && nrow(covariances_error)>0){
 
 # Factors
 if (nfactors_indic==TRUE && intercorr_indic==1){
-  cat("**Factors**", fill=TRUE)
+  cat("**Category Factors**", fill=TRUE)
  cat("\\newline",fill=TRUE)
   cat("Only if supported by theory, you could try to collapse the factors which were identified as probably non-distinguishable. ", fill=TRUE)
  cat("\\newline",fill=TRUE)
@@ -1495,10 +1502,11 @@ if (nfactors_indic==TRUE && intercorr_indic==1){
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=addings}
-cat("\n## Addings to the Model", fill=TRUE)
-
+cat("**Addings to the Model**", fill=TRUE)
+cat("\\newline",fill=TRUE)
+ 
 if (mi_indic==TRUE && nrow(mi_fl2)>0){ 
-  cat("**Observed Variables**", fill=TRUE) # given by significant mod indices
+  cat("**Category Observed Variables**", fill=TRUE) # given by significant mod indices
  cat("\\newline",fill=TRUE)
   cat("Update the model by adding to the model cross-loadings indicated within the table \"Significant and Relevant MIs With Respect To Factor Loadings\".", fill=TRUE)
  cat("\\newline",fill=TRUE)
@@ -1506,7 +1514,7 @@ if (mi_indic==TRUE && nrow(mi_fl2)>0){
 
 
 if (mi_indic==TRUE && nrow(mi_corr2)>0){
-  cat("**Error Covariances**", fill=TRUE) # given by significant mod indices 
+  cat("**Category Error Covariances**", fill=TRUE) # given by significant mod indices 
  cat("\\newline",fill=TRUE)
   cat("Update the model by adding to the model error covariances indicated within the table \"Significant and Relevant MIs With Respect To Error Covariances\". ", fill=TRUE)
  cat("\\newline",fill=TRUE)
@@ -1514,7 +1522,7 @@ if (mi_indic==TRUE && nrow(mi_corr2)>0){
 
 
 if (mi_indic==TRUE && nrow(mi_fcov2)>0){
-  cat("**Factor Covariances**", fill=TRUE) # given by significant mod indices 
+  cat("**Category Factor Covariances**", fill=TRUE) # given by significant mod indices 
   cat("\\newline",fill=TRUE)
   cat("Update the model by adding to the model factor covariances indicated within the table \"Significant and Relevant MIs With Respect To Factor Covariances\". ", fill=TRUE)
  cat("\\newline",fill=TRUE)
