@@ -87,16 +87,9 @@ shinyUI(fluidPage(
   
   
   fluidRow( 
-              
       
-      column(6, 
-             
-             wellPanel(style = "background: #fff;", includeHTML("www/Description.html")),
-             wellPanel(style = "background: #fff;", includeHTML("www/Instructions.html"))
-
-      ),
                  
-      column(6,  
+      column(6, offset=1, 
              
              
              wellPanel(style = "background: #adc7de;", 
@@ -144,9 +137,7 @@ shinyUI(fluidPage(
             ),
             
             
-            fluidRow(column(6, 
-                   
-                   wellPanel(style = "background: #adc7de;", 
+           wellPanel(style = "background: #adc7de;", 
                       
                       h3("Type Your Model"),
                       
@@ -162,10 +153,9 @@ f2 =~ x4 + x5 + x6
 f3 =~ x7 + x8 + x9
 ", rows=10, cols=60,"")
                       
-            )),
+            ),
             
-            column(6, 
-                   wellPanel(style = "background: #adc7de;", 
+          wellPanel(style = "background: #adc7de;", 
                       
                       h3("Expected Sign of Factor Loadings"),
                       
@@ -181,28 +171,17 @@ f2 =~ -x4 +x5 +x6
 f3 =~ -x7 +x8 +x9
 ", rows=10, cols=60,"")
                       
-            )))
-            
-      )
-                  
-  )
-  ,
-  
-  
-  fluidRow( 
-    
-    
-    column(12, 
-           
-           wellPanel(style = "background: #ff9900", align="center", 
-                     
-                     h3("Generate the Report"),
-                     
-                     radioButtons('rcode', 'Include R Code', c('Yes','No'), inline = TRUE),
-                     
-                     h5("Click the button to generate the report"),
-                     
-                     actionButton("generate", "", style="
+            ),
+          
+          wellPanel(style = "background: #ff9900", align="center", 
+                    
+                    h3("Generate the Report"),
+                    
+                    radioButtons('rcode', 'Include R Code', c('Yes','No'), inline = TRUE),
+                    
+                    h5("Click the button to generate the report"),
+                    
+                    actionButton("generate", "", style="
                                     height:145px;
                                     width:84px;
                                     padding-top: 3px;
@@ -213,26 +192,18 @@ f3 =~ -x7 +x8 +x9
                                     outline: none;
                                     box-shadow: none !important;
                                    ")
-                     
-                     
-           )
-           
-           )
-  ),
-  
-  
-  fluidRow( 
-    
-    
-    column(12, 
-           
-           wellPanel(style = "background: #ff9900", align="center", 
-                     
-                     h3("Download the Report"),
-                     
-                     h5("Click the button to download the report"),
-                     
-                     downloadButton("download", "", style="
+                    
+                    
+          ),
+          
+          
+          wellPanel(style = "background: #ff9900", align="center", 
+                    
+                    h3("Download the Report"),
+                    
+                    h5("Click the button to download the report"),
+                    
+                    downloadButton("download", "", style="
                                     height:145px;
                                     width:84px;
                                     padding-top: 3px;
@@ -240,43 +211,24 @@ f3 =~ -x7 +x8 +x9
                                     background-color: #ff9900; 
                                     border-color: #ff9900;
                                     background-image: url('Button.gif');") 
-                     
-                     
-           )
-    )
-  ),
+                    
+                    
+          )
   
-
-  fluidRow( 
-    
-    
-    column(6, 
-
-           wellPanel(style = "background: #fff;", includeHTML("www/Secure.html")), 
-           wellPanel(style = "background: #fff;", includeHTML("www/Other.html"))
-          
-    
-    ),
-
-    column(6, 
-       
-        wellPanel(style = "background: #fff;", includeHTML("www/Also.html")),
-        wellPanel(style = "background: #fff;", includeHTML("www/OpenSource.html"))
-       
-    )
-
-),
-
-fluidRow( 
-  
-  column(12, 
-         
-         wellPanel(style = "background: #fff;", includeHTML("www/Contact.html"))
-         
-  )
-  
-),
-
+      ), # column 
+      
+      column(4, 
+             
+             wellPanel(style = "background: #fff;", includeHTML("www/Description.html")),
+             wellPanel(style = "background: #fff;", includeHTML("www/Instructions.html")),
+             wellPanel(style = "background: #fff;", includeHTML("www/Secure.html")), 
+             wellPanel(style = "background: #fff;", includeHTML("www/OpenSource.html")), 
+             wellPanel(style = "background: #fff;", includeHTML("www/Other.html")),
+             wellPanel(style = "background: #fff;", includeHTML("www/Also.html")),
+             wellPanel(style = "background: #fff;", includeHTML("www/Contact.html"))
+             
+      ) # column 
+  ), # fluidrow
   
  includeHTML("www/Footer.html"),
  

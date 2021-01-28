@@ -86,7 +86,7 @@ discr <- discr[,c(1:4,11:13)]
 discr <- discr[!is.na(discr$`Pr(>Chisq)`),]
 kable(discr,caption="Factor Discriminant Validity Test at Cutoff 0.85",digits=3,
       row.names = NA, linesep = '', col.names = 
-        c("","","","Factor Correlation","Chisq diff","Df diff","P-Value"))
+        c("","","","Factor Correlation","Chisq diff","Df diff","P-Value"), format="simple")
 ``` 
 
 ```{whites, eval=FALSE, echo = eval_code}
@@ -102,7 +102,7 @@ rel_transpose <- as.data.frame(t(rel))
 rel_transpose <- rel_transpose[1:(nrow(rel_transpose)-1),]
 ### Output table
 opts <- options(knitr.kable.NA = "Not provided in case of cross-loadings")
-kable(rel, caption="Factor Reliability",digits=2, linesep = '', longtable=T)
+kable(rel, caption="Factor Reliability",digits=2, linesep = '', longtable=T, format="simple")
 options(opts)
 ```  
 
@@ -185,7 +185,7 @@ rownames(mi_corr) <- NULL
 kable(mi_corr,col.names=c("Left","Operator","Right","Modification Index", 
                           "Expected Parameter Change", "Delta", "Power", "Decision"), 
       digits=3, caption="Modification Indices With Respect To Error Covariances", 
-      linesep = '', longtable=T)
+      linesep = '', longtable=T, format="simple")
 ```
 
 
@@ -198,7 +198,7 @@ rownames(mi_fl) <- NULL
 kable(mi_fl,col.names=c("Left","Operator","Right","Modification Index", 
                         "Expected Parameter Change", "Delta", "Power", "Decision"), 
       digits=3, caption="Modification Indices With Respect To Factor Loadings", 
-      linesep = '', longtable=T)  
+      linesep = '', longtable=T, format="simple")  
 ```  
 
 
@@ -212,7 +212,7 @@ rownames(mi_fcov) <- NULL
 kable(mi_fcov,col.names=c("Left","Operator","Right","Modification Index", 
                                  "Expected Parameter Change", "Delta", "Power", "Decision"), 
              digits=3, caption="Modification Indices With Respect To Factor Covariances", 
-             linesep = '', longtable=T) 
+             linesep = '', longtable=T, format="simple")
 ```
 
 

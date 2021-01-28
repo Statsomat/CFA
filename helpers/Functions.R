@@ -84,35 +84,29 @@ cutsrmr <- function(n){
   }
 }
 
-# Standardized cov residuals larger than 2.58
+# Standardized cov residuals larger eq than 2.58
 stand_residuals <- function(x,sign){
-  covstd <- resid(x, type="standardized")$cov # Std residuals on cov
+  covstd <- lavResiduals(x,type="raw")$cov.z # Std residuals on cov
   if (sign=="neg"){
     covstd = -covstd
   }
+  covstd[upper.tri(covstd, diag=TRUE)] <- NA
   m <- data.frame(which(covstd>=2.58, arr.ind=TRUE))
-  size <- nrow(m)/2 + 1
-  m <- m[size:nrow(m),]
-  m <- m[order(m$row),]
   dimnames <- x@Model@dimNames[[1]][1][[1]]
   dimnames2 <- data.frame(dimnames[m[,1]],dimnames[m[,2]])
-  dimnames2 <- dimnames2[complete.cases(dimnames2),]
   return(dimnames2)
 }
 
-# Corr residuals larger than 0.1
+# Corr residuals larger eq than 0.1
 corr_residuals <- function(x,sign){
-  covstd <- resid(x, "cor")$cov # Residuals 
+  covstd <- resid(x, "cor")$cov # Corr. Residuals 
   if (sign=="neg"){
     covstd = -covstd
   }
+  covstd[upper.tri(covstd, diag=TRUE)] <- NA
   m <- data.frame(which(covstd>=0.1, arr.ind=TRUE))
-  size <- nrow(m)/2 + 1
-  m <- m[size:nrow(m),]
-  m <- m[order(m$row),]
   dimnames <- x@Model@dimNames[[1]][1][[1]]
   dimnames2 <- data.frame(dimnames[m[,1]],dimnames[m[,2]])
-  dimnames2 <- dimnames2[complete.cases(dimnames2),]
   return(dimnames2)
 }
 
