@@ -130,7 +130,7 @@ shinyUI(fluidPage(
             
             wellPanel(style = "background: #adc7de;", 
                       
-                      h3("Select Variables"),
+                      h3("Select Variables (max 10)"),
                       
                       uiOutput("selection1")
                     
@@ -161,12 +161,11 @@ f3 =~ x7 + x8 + x9
                       
                       h5("Is it a positive or a negative association? "),
                       
-                      h5("Overwrite the example below or leave it blank if you're unsure. "),
+                      h5("Overwrite the example below or leave it blank if you're unsure. Only lines containing the =~ operator are allowed. "),
                       
                       tags$style(type="text/css", "textarea {width:100%}"),
                       
-                      tags$textarea(id="textprediction", placeholder="# expectation for the signs (e.g. direction) of factor loadings
-f1 =~ +x1 +x2 +x3
+                      tags$textarea(id="textprediction", placeholder="f1 =~ +x1 +x2 +x3
 f2 =~ -x4 +x5 +x6
 f3 =~ -x7 +x8 +x9
 ", rows=10, cols=60,"")

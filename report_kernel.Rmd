@@ -67,22 +67,10 @@ model <- params$model
 tryCatch({
   extract <- cfa(model, data=df, estimator="ML", std.ov=TRUE, std.lv=TRUE) 
   modelvars <- extract@pta$vnames$ov[[1]]
-  df <- df[,modelvars,drop=FALSE]
+  df <- df[, modelvars, drop=FALSE]
   df2 <- df
 }, error=function(e) {cat("")}
 )
-```
-
-
-```{r, eval=eval0}
-# Higher-order models not allowed 
-tryCatch({
-  if (length(extract@pta$vnames$lv.nox[[1]])>0){
-    eval0 <- FALSE
-    stop()
-}}, error= function(e) {
-  stop(safeError("Non-exogenous latent variables not allowed by this app. "))
-})
 ```
 
 
@@ -275,19 +263,19 @@ if (length(numeric_percent[(numeric_percent>0.9)]) != 0L){
 if (exists("df_cont")){
   if (exists("modelvars")){
     if (length(modelvars) > length(colnames(df_cont))){
-      cat("**Error: Some observed variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For support contact: support@statsomat.com**")
+      cat("**Error: Some observed variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For (chargeable) support contact: support@statsomat.com**")
       cat("\\newline",fill=TRUE) 
     } else {
       eval2 <- TRUE
     }
   } else if (ncol(df_cont) < ncol(df)){
-    cat("**Error: Some uploaded variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For support contact: support@statsomat.com**")
+    cat("**Error: Some uploaded variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For (chargeable) support contact: support@statsomat.com**")
     cat("\\newline",fill=TRUE) 
   } else {
     eval2 <- TRUE
   }
 } else {
-  cat("**Error: The uploaded variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For support contact: support@statsomat.com**")
+  cat("**Error: The uploaded variables are not considered to be continuous. Other CFA methods for non-continuous data will be implemented soon. For (chargeable) support contact: support@statsomat.com**")
   cat("\\newline",fill=TRUE) 
 }
 
@@ -351,7 +339,7 @@ tryCatch({
     cat("Estimation Method: Maximum Likelihood. ", fill=TRUE)
     cat("\\newline",fill=TRUE) 
   } else {
-    cat("**Error: We cannot assume an approximately (multivariate) normal distribution of the data, which is required in this app. You could try to apply suitable transformations to the data before using this app. Other CFA methods for non-normally distributed data will be implemented soon. For support contact: support@statsomat.com**")
+    cat("**Error: We cannot assume an approximately (multivariate) normal distribution of the data, which is required in this app. You could try to apply suitable transformations to the data before using this app. Other CFA methods for non-normally distributed data will be implemented soon. For (chargeable) support contact: support@statsomat.com**")
   }
 }, 
 warning=function(w){
@@ -378,7 +366,8 @@ tryCatch({
     pe <- parameterEstimates(fit, rsquare = TRUE)
   }
   
-    fitmean <- cfa(params$model, data=df_work, missing="fiml", estimator="ML") # object used in discriminantVal
+  # object used in discriminantVal
+  fitmean <- cfa(params$model, data=df_work, missing="fiml", estimator="ML") 
   
   # Further evaluation
   eval4 <- TRUE
@@ -386,19 +375,23 @@ tryCatch({
 
 }, error=function(e) {
   
-  stop(safeError("Improper CFA solution. This can be due to: Model misspecification, outliers,\n small sample size, multicollinearity etc."))
+  stop(safeError("Improper CFA solution. This can be due to: Lavaan syntax misspecification,\n model misspecification, outliers, small sample size, multicollinearity, etc. \n For (chargeable) support contact support@statsomat.com"))
   
 }, warning=function(w) {
   
-  stop(safeError("Improper CFA solution. This can be due to: Model misspecification, outliers,\n small sample size, multicollinearity etc."))
+  stop(safeError("Improper CFA solution. This can be due to: Lavaan syntax misspecification,\n model misspecification, outliers, small sample size, multicollinearity, etc. \n For (chargeable) support contact support@statsomat.com"))
   
 })
 
-
-
-
 ```     
 
+
+```{r, dev="cairo_pdf", eval=eval4}
+if (length(extract@pta$vnames$lv.nox[[1]])>0){
+  eval4 <- FALSE
+  stop(safeError("Higher-order models not covered by this app. \n For (chargeable) support contact support@statsomat.com"))
+}
+```   
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval4}
 
@@ -484,7 +477,7 @@ knitr::kable(r2,caption="Communality",digits=2, row.names = NA, linesep = '', lo
 # Indicator for Factor Discriminant Validity: True only if nfactors >1 & discriminant table ok
 tryCatch({
   
-  if (length(fit@pta$vnames$lv.x[[1]])>1){
+  if (length(fit@pta$vnames$lv[[1]])>1){
     discr <- discriminantVal(fitmean, cutoff = 0.85, merge = FALSE, level = 0.95, data=df_work)
     discr <- discr[,c(1:4,11:13)]
     discr$`Pr(>Chisq)` <- sapply(discr$`Pr(>Chisq)`,pformat)
@@ -516,7 +509,7 @@ rel <- rel[3:5,]
 rel <- as.data.frame(rel)
 rownames(rel) <- c("Omega (Bentler)","Omega (McDonald)","AVE")
 ## Colname for single factor 
-if (length(fit@pta$vnames$lv.x[[1]])==1) colnames(rel) <- fit@pta$vnames$lv.x[[1]]
+if (length(fit@pta$vnames$lv[[1]])==1) colnames(rel) <- fit@pta$vnames$lv[[1]]
 rel_transpose <- as.data.frame(t(rel))
 rel_transpose <- rel_transpose[1:(nrow(rel_transpose)-1),]
 ## Table  
@@ -849,7 +842,7 @@ if (rmseanull < 0.158){
   
   
   if (chi2 == 0L && srmr==0L && rmsea==0L){
-    cat("All these fit indices suggest a poor model fit to the data. Therefore, we assume that the model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
+    cat("All these fit indices suggest a poor model fit to the data. Therefore, we conclude that the model is non-acceptable and proceed by diagnosing the sources of possible misspecification. ")
     step1<-0 
     
   } else if (chi2 == 0L && srmr == 1L && rmsea == 0L){
@@ -977,11 +970,11 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
   cat("Following variable pairs have standardized residuals which are larger or equal than the considered threshold 2.58 Brown [@brown] or correlation residuals which are larger or equal than the considered threshold 0.1 Kline [@kline]. In these cases, the covariance relationship between the involved variables is probably underestimated, indicating that additional parameters may be needed in the model: ")
   cov_underestimated <- TRUE
   both <- rbind(stand_residuals(fit,"pos"),corr_residuals(fit,"pos"))
-  both <- both[order(both[,1],both[,2]),]
   both <- both[complete.cases(both),]
   both <- unique(both)
-  both <- t(apply(both,1,sort))
+  both <- as.data.frame(t(apply(both,1,sort)))
   both <- unique(both)
+  both <- both[order(both[,1],both[,2]),]
   rownames(both) <- paste("Pair",seq(1:nrow(both)))
   knitr::kable(both, col.names=NULL, caption = "Pair(s) with Suspected Underestimated Covariance",linesep = '', longtable=T)  %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
@@ -992,11 +985,11 @@ if (nrow(stand_residuals(fit,"pos"))>0 || nrow(corr_residuals(fit,"pos"))>0){
 if (nrow(stand_residuals(fit,"neg"))>0 || nrow(corr_residuals(fit,"neg"))>0){
  cat("Following variable pairs have standardized residuals which are smaller or equal than the considered threshold -2.58 Brown [@brown] or correlation residuals which are smaller or equal than the considered threshold -0.1 Kline [@kline]. In these cases, the covariance relationship between the involved variables is probably overestimated: ")
   both <- rbind(stand_residuals(fit,"neg"),corr_residuals(fit,"neg"))
-  both <- both[order(both[,1],both[,2]),]
   both <- both[complete.cases(both),]
   both <- unique(both)
-  both <- t(apply(both,1,sort))
+  both <- as.data.frame(t(apply(both,1,sort)))
   both <- unique(both)
+  both <- both[order(both[,1],both[,2]),]
   rownames(both) <- paste("Pair",seq(1:nrow(both)))
   knitr::kable(both, col.names=NULL, caption = "Pair(s) with Suspected Overestimated Covariance",linesep = '', longtable=T)  %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
@@ -1091,16 +1084,17 @@ tryCatch({
   # Split model
   model <- params$direction
   modelsplit <- unlist(strsplit(model, split="\n"))
-  if (modelsplit[1]=="") modelsplit <- modelsplit[2:length((modelsplit))]
-
+  modelsplit <- gsub(" ", "", modelsplit, fixed = TRUE)
+  modelsplit <- modelsplit[modelsplit != ""]
   directionfl <- NULL
+  if (length(modelsplit) != length(fit@pta$vnames$lv[[1]])) stop() # stop if no of lines different from no of factors 
   for (i in 1:length(modelsplit)){
     # Direction of factor loadings
-    if (grepl("=~",modelsplit[i])==FALSE && grepl("~~",modelsplit[i])==FALSE){
-      stop("No valid operators existent. ")
-    } else if (grepl("=~",modelsplit[i])==TRUE){
-      directionfl <- rbind(directionfl,direction_fl(modelsplit[i]))
-    }
+    if (grepl("=~",modelsplit[i])==FALSE){
+        stop()
+    } else {
+        directionfl <- rbind(directionfl,direction_fl(modelsplit[i]))
+      }
   }
   directionfl$Order <- NULL
   directionfl_indic <- TRUE
@@ -1433,7 +1427,7 @@ respecification <- eliminations || addings || callforaction
 # Final Summary Text
 ## Knock-out because of not fulfilled expectation 
 if (length(which(pe_stand2$Check=="Not ok!"))>0){
-  cat("Since the sign(s) of the factor loadings do not correspond to your expectation, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. ")
+  cat("Since the sign(s) of the factor loadings do not correspond to your expectation, we conclude that the model is non-acceptable. Please reconsider your data and the theory behind. ")
   eliminations <- FALSE
   addings <- FALSE
   callforaction <- FALSE
@@ -1445,17 +1439,17 @@ if (length(which(pe_stand2$Check=="Not ok!"))>0){
   } else if (step1 %in% c(0,1,12)){
     cat("Considering the goodness-of-fit indices, the model is non-acceptable. We conclude that the model is non-acceptable. Please reconsider your data and the theory behind. ")
   } else {
-    cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Nevertheless, we cannot identify significant and relevant localized areas of ill fit. If the cutoff-values used by this app to determine significance and relevance and  correspond to your research area, then we conclude that the model is poor but acceptable. In all other cases, we conclude that the quality of the model is uncertain and recommend a human-based CFA. For support contact support@statsomat.com")
+    cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Nevertheless, we cannot identify any significant and relevant localized areas of ill fit. We cautiously conclude that the model is poor but acceptable. We strongly recommend the confirmation by a human-based CFA. For (chargeable) support contact support@statsomat.com")
   }
   
 } else if (respecification==TRUE){
   
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
-    cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist some localized areas of questionable fit. Therefore, the quality of the model is uncertain. Only if supported by theory, you could try to respecify the model and improve the areas of questionable fit by applying (one of the) following respicification ideas. ")
+    cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist some localized areas of questionable fit. Therefore, the quality of the model is uncertain. Consider the next recommendations. ")
   } else if (step1 %in% c(0,1,12)){
-    cat("Considering the goodness-of-fit indices, the model is non-acceptable. Moreover, there exist localized areas of ill fit. Therefore, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following respicification ideas. ")
+    cat("Considering the goodness-of-fit indices, the model is non-acceptable. Moreover, there exist localized areas of ill fit. Therefore, we conclude that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following respicification ideas. ")
   } else {
-    cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Moreover, there exist localized areas of ill fit. Therefore, we assume that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following respicification ideas. ")
+    cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Moreover, there exist localized areas of ill fit. Therefore, we conclude that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following respicification ideas. ")
   }
 }
 ```
@@ -1467,7 +1461,7 @@ cat("**Respicification Ideas**", fill=TRUE)
 ```{r, results="asis", dev="cairo_pdf", eval=callforaction}
 cat("**Further Analysis**", fill=TRUE) # Uncertain
  cat("\\newline",fill=TRUE)
-cat("There exist (completely standardized) factor loadings which are uncertain. Further human-based statistical analysis is recommended to clarify their importance. For support contact support@statsomat.com") 
+cat("There exist (completely standardized) factor loadings which are uncertain. Further human-based judgement or special statistical analysis is recommended to clarify if these uncertain factor loadings are indeed part of the model or could be dropped. For more (chargeable) support contact support@statsomat.com") 
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eliminations}
@@ -1535,7 +1529,6 @@ if (mi_indic==TRUE && nrow(mi_fcov2)>0){
 
 
 if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)){
-  cat("\\newline",fill=TRUE)
   cat("Start updating the model by adding a parameter with the largest modification index (and EPC) and only if this parameter can be interpreted meaningfully. Other possible localized areas of misfit may be remedied by adding, i.e. freeing a single parameter.", fill=TRUE)
 }
 ```
@@ -1557,8 +1550,9 @@ cat("If you have sound theory-based reasons and decide to respicify the model, w
 ```  
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5, echo = FALSE}
-cat("\n# Final Comment",fill=TRUE)
-cat("Please consider that this report depends on hard-coded cutoff-values which may be too liberal or too conservative for your research area. The automatic computation and interpretation delivered by the Statsomat app should not completely replace the classical, made by humans graphical exploratory data analysis and statistical analysis. There may be data cases for which the Statsomat does not deliver the most optimal solution or output interpretation.")
+cat("**Warning**", fill=TRUE)
+cat("\\newline",fill=TRUE)
+cat("Please consider that this report depends on hard-coded cutoff-values which may be too liberal or too conservative for your research area. The automatic computation and interpretation delivered by the Statsomat app should not completely replace the classical, human-based graphical exploratory data analysis and statistical analysis. There may be data cases for which the Statsomat does not deliver the most optimal solution or output interpretation.")
 ```    
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5, echo = FALSE}
