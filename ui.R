@@ -159,7 +159,7 @@ f3 =~ x7 + x8 + x9
                       
                       h3("Expected Sign of Factor Loadings"),
                       
-                      h5("Is it a positive or a negative association? "),
+                      h5("Is it a positive (zero included) or a negative association? "),
                       
                       h5("Overwrite the example below or leave it blank if you're unsure. Only lines containing the =~ operator are allowed. "),
                       

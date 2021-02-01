@@ -409,16 +409,43 @@ tryCatch({
   }
   
 
-}, error=function(e) {
+}, error = function(e) {
   
-  stop(safeError("Errors in the cfa execution. Please reconsider the data or the model."))
+  stop(safeError("Improper CFA solution. This can be due to: Lavaan syntax misspecification,\n model misspecification, outliers, small sample size, multicollinearity, etc. \n For (chargeable) support contact support@statsomat.com"))
+  
+}, warning = function(w) {
+  
+  cat("**Warning: There are ambiguities in the CFA solution. We recommend an additional human-based CFA. For (chargeable) support contact support@statsomat.com**")
   
 })
 
+```     
 
 
+```{r, results="asis", dev="cairo_pdf", eval=eval4}
+
+# Fit with STD OV
+tryCatch({
+  
+  if (indic_missings==TRUE){
+    # No std of ov, default std of lv 
+    fit2 <- cfa(params$model, data=df_work, missing="fiml", estimator="ML", std.ov=TRUE) 
+    pe_stand <- standardizedsolution(fit2, type="std.all")
+  } else {
+    # No std of ov, default std of lv 
+    fit2 <- cfa(params$model, data=df_work, estimator="ML", std.ov=TRUE) 
+    pe_stand <- standardizedsolution(fit2, type="std.all")
+  }
+  
+
+}, error = function(e) {
+  
+  stop(safeError("Improper CFA solution. This can be due to: Lavaan syntax misspecification,\n model misspecification, outliers, small sample size, multicollinearity, etc. \n For (chargeable) support contact support@statsomat.com"))
+  
+})
 
 ```     
+
 
 \pagebreak
 
@@ -1153,6 +1180,7 @@ pe_stand2$rel[which(abs(pe_stand2$est.std) <= 0.4)] <- "!"
 pe_stand2$rel[which(abs(pe_stand2$est.std) > 0.4)] <- "*"
 pe_stand2$rel[which(abs(pe_stand2$est.std) > 0.6)] <- "**"
 pe_stand2$rel[which(abs(pe_stand2$est.std) > 0.8)] <- "***"
+pe_stand2$rel[which(is.na(pe_stand2$pvalue))] <- "-"
 ## New column
 pe_stand2$direction <- NA
 if (directionfl_indic==TRUE){
@@ -1161,6 +1189,7 @@ if (directionfl_indic==TRUE){
   pe_stand2$direction <- (pe_stand2$Sign == pe_stand2$sign_est)
   pe_stand2$direction[which(pe_stand2$direction == TRUE)] <- "As expected."
   pe_stand2$direction[which(pe_stand2$direction == FALSE)]  <- "Not as expected!"
+  pe_stand2$direction[which(sign(pe_stand2$est.std)==0)]  <- "As expected."
   pe_stand2$Sign <- NULL
   pe_stand2$sign_est <- NULL
 } else {
@@ -1185,6 +1214,7 @@ pe_stand2$keep[which(pe_stand2$pvalue <= 0.05 & abs(pe_stand2$est.std) <= 0.4 &
 
 pe_stand2$cross <- NULL
 pe_stand2$keep[which(pe_stand2$direction=="Not as expected!")] <- "Not ok!"
+pe_stand2$keep[which(is.na(pe_stand2$pvalue))] <- "-"
 
 ## Colnames 
 colnames(pe_stand2) <- c("Latent Variable","Observed Variable","Loading","P-Value","Significant?","Relevance","Sign","Check")
@@ -1298,20 +1328,22 @@ factorcov <- factorcov[abs(factorcov$est.std)>0.85,]
 factorcov <- factorcov[,c(1,2,3,4)]
 
 factornonsig <- discr[which(discr$`Pr(>Chisq)`>0.05),]
+intercorr_indic = 0 # Assume reasonable discriminant validity
 
 # Text 
 cat("\n### Factor Discriminant Validity", fill=TRUE)
 cat("As noted by Brown [@brown], \"the interpretability of the size and statistical significance of factor intercorrelations depends on the specific research context. \"")
 if (sum(discr$`Pr(>Chisq)` > 0.05, na.rm=TRUE)==0){
-  intercorr_indic = 0
   cat(" Though, the largest (absolute) estimated factor intercorrelation within the section \"Completely Standardized Parameter Estimates\" is",round(max_corr,2)," which we regard as a proof of a reasonable discriminant validity. Moreover, the statistical test(s) for factor discriminant validity are statistically significant at 5% type I error. ")
-} else {
+} else if (sum(discr$`Pr(>Chisq)` > 0.05, na.rm=TRUE) > 0 && max_corr > 0.5){
   cat(" Still, large or statistically significant factor covariances resp. correlations are questionable and provide evidence of poor discriminant validity. There is evidence to question the distinctness of the following factor pair(s), since their correlation approaches in absolute value 1.0 and their test of discriminant validity is non-statistically significant at 5% type I error: ")
   intercorr_indic = 1
   rownames(factornonsig) <- paste("Pair",seq(1:nrow(factornonsig)))
   knitr::kable(factornonsig ,col.names = c("","","","Factor Correlation","Chisq diff","Df diff","P-Value"), linesep = '',digits=3,
                caption="Factor with Poor Discriminant Validity")  %>%
     kable_styling(position = "center", latex_options = c("HOLD_position","repeat_header"))
+} else {
+  cat(" Though, the largest (absolute) estimated factor intercorrelation within the section \"Completely Standardized Parameter Estimates\" is",round(max_corr,2)," which we regard as a proof of a reasonable discriminant validity. ")
 }
 ```  
 
@@ -1410,9 +1442,9 @@ cat("\\newline", fill=TRUE)
 
 # Build factor criterium for adding factors
 pe_stand3 <- data.table(pe_stand2)
-#pe_stand3 <- pe_stand3[,.(nonrel=sum(grepl("Uncertain",Check)),.N),by=eval(colnames(pe_stand2)[1])]
-pe_stand3 <- pe_stand3[,.(nonrel=sum(abs(pe_stand2$Loading) <= 0.4),.N),by=eval(colnames(pe_stand2)[1])]
-pe_stand3 <- pe_stand3[nonrel>=3 && nonrel<N]
+colnames(pe_stand3)[3] <- "Loading"
+pe_stand3 <- pe_stand3[,.(nonrel=sum(abs(Loading)<=0.4),.N),by=eval(colnames(pe_stand3)[1])]
+pe_stand3 <- pe_stand3[nonrel>=3 & nonrel<N]
 
 # Define respecification
 if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)) addings <- TRUE # Modification Indices
@@ -1437,7 +1469,7 @@ if (length(which(pe_stand2$Check=="Not ok!"))>0){
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
     cat("Considering the goodness-of-fit indices, the model is acceptable. Moreover, we cannot identify localized areas of ill fit. We conclude that the model is acceptable. ")
   } else if (step1 %in% c(0,1,12)){
-    cat("Considering the goodness-of-fit indices, the model is non-acceptable. We conclude that the model is non-acceptable. Please reconsider your data and the theory behind. ")
+    cat("Considering the goodness-of-fit indices, the model is non-acceptable. We conclude that the model is non-acceptable. Nevertheless, we cannot identify any significant and relevant localized areas of ill fit. We strongly recommend an additional human-based CFA. For (chargeable) support contact support@statsomat.com")
   } else {
     cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Nevertheless, we cannot identify any significant and relevant localized areas of ill fit. We cautiously conclude that the model is poor but acceptable. We strongly recommend the confirmation by a human-based CFA. For (chargeable) support contact support@statsomat.com")
   }
@@ -1471,7 +1503,7 @@ cat("There exist (completely standardized) factor loadings which are uncertain. 
 if (nrow(pe_stand2[which(pe_stand2$`P-Value` > 0.05 & abs(pe_stand2$Loading) <= 0.4),])>0){
   cat("**Eliminate Observed Variables**", fill=TRUE) # Not Relevant
   cat("\\newline",fill=TRUE)
-  cat("There exist observed variables which are probably not related to the factor(s). Only supported by theory and further statistical analysis, you could drop the corresponding parameters from the model. ", fill=TRUE) 
+  cat("There exist observed variables which are probably not related to the factor(s). Only if supported by theory and further statistical analysis, you could drop the corresponding parameters from the model. ", fill=TRUE) 
 }
 ```
 
@@ -1539,7 +1571,7 @@ if (mi_indic==TRUE && (nrow(mi_fl2)>0 || nrow(mi_corr2)>0)){
 if (cov_underestimated==TRUE && nrow(pe_stand3)>0){
   cat("**Add Factors**", fill=TRUE) # given by special pattern in stand. resid matrix
  cat("\\newline",fill=TRUE)
-  cat("Following factors contain at least three completely standardized factor loadings smaller or equal than the chosen cutoff-value of 0.4. In some cases, this is an indicator of a model with too few factors. Only if supported by theory, you could try to split and increase the number of factors in the model: ")
+  cat("Following factors (e.g. latent variables) are related to at least three completely standardized factor loadings which are smaller or equal than the chosen cutoff-value of 0.4. Sometimes this is an indicator of a model with too few factors. Only if supported by theory, you could try to split and increase the number of factors in the model. Split: ")
   knitr::kable(pe_stand3[,1], col.names = NULL, caption ="Factors to Split", linesep = '')  %>%
     kable_styling(position = "center", latex_options = c("HOLD_position","repeat_header"))
 }
