@@ -132,7 +132,7 @@ covraw <- lavResiduals(fit,type="raw")$cov
 corrplot::corrplot(covraw, is.corr = FALSE,
                type = 'lower',
                order = "original",
-               tl.col='black', tl.cex=.50, number.cex=0.50, method="number")
+               tl.col='black', tl.cex=.50, number.cex=0.50, method="number", cl.cex = 0.5)
 ```  
 
 ```{whites, eval=FALSE, echo = eval_code}
@@ -141,7 +141,7 @@ covstd <- lavResiduals(fit,type="raw")$cov.z
 corrplot::corrplot(covstd, is.corr = FALSE,
                type = 'lower',
                order = "original",
-               tl.col='black', tl.cex=.50, number.cex=0.50, method="number")
+               tl.col='black', tl.cex=.50, number.cex=0.50, method="number", cl.cex = 0.5)
 
 ```  
 
@@ -152,7 +152,7 @@ r <- resid(fit, "cor")$cov # Residuals on cor
 corrplot::corrplot(r, is.corr = FALSE,
                type = 'lower',
                order = "original",
-               tl.col='black', tl.cex=.50, number.cex=0.50, method="number")
+               tl.col='black', tl.cex=.50, number.cex=0.50, method="number", cl.cex = 0.5)
 ```  
 
 

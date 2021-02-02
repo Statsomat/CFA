@@ -80,9 +80,15 @@ cat("\\pagebreak")
 
 ```{r, results="asis", eval=eval_code, echo=FALSE}
 cat("\n# R Code ", fill=TRUE)
-cat("\\normalsize\\textcolor{blue}{Instructions\\newline
-If not already available, please install R, RStudio and the requiered packages listed on the previous page. We assume that your data is stored at this location: \"C:\\textbackslash \". If not, please change the path to your data in the code below. For Windows users, avoid to use paths containing white spaces. Copy the code below, paste it carefully in a new R Script within RStudio and run it. The numerical results will be printed in the Console. The graphs can be accessed in the Plots tab. }
-\\newline")
+```
+
+
+```{r, results="asis", eval=eval_code, echo=FALSE}
+cat("\\textcolor{blue}{Instructions ")
+cat("\\newline ")  
+cat("If not already available, please install R, RStudio and the requiered packages listed on the previous page. Copy the code below, paste it carefully in a new R Script within RStudio. For a seamless copy \\& paste process, open the PDF report in a browser. Change the path to your data in the line} ")
+cat("`filepath <- ...` ") 
+cat("\\textcolor{blue}{For Windows users, avoid using paths containing spaces. Run the code. Explore the results (numerical results in the Console, plots in the Plots tab). }")
 ```
 
 <style>

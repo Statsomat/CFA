@@ -171,19 +171,31 @@ function(input, output, session) {
     removeModal()
     
     if (length(unique(input$selection1$left)) != length(input$selection1$left)){
-      showNotification("Error in selection: The columns names of the dataset are not distinct. Please rename columns and restart the app.", duration=30)
+      showNotification("Error: The columns names of the dataset are not distinct. ", duration=40)
+      Sys.sleep(5)
+      session$reload()
+    }
+    
+    if (sum(grepl("_",colnames(datainput())))>0){
+      showNotification("Error: Underscores in column names currently not supported. ", duration=40)
       Sys.sleep(5)
       session$reload()
     }
     
     if (nrow(datainput()) > 10000){
-      showNotification("Error: Maximum 1000 rows allowed. ", duration=30)
+      showNotification("Limit reached: For a CFA with more than 1000 observations contact support@statsomat.com", duration=40)
+      Sys.sleep(5)
+      session$reload()
+    }
+    
+    if (nrow(datainput()) < 100){
+      showNotification("Error: Minimum 100 observations required. ", duration=40)
       Sys.sleep(5)
       session$reload()
     }
     
     if (length(input$selection1$right) > 100 ){
-      showNotification("Error: Maximum 10 variables allowed.", duration=30)
+      showNotification("Limit reached: For a CFA with more than 10 variables contact support@statsomat.com", duration=40)
       Sys.sleep(5)
       session$reload()
     }
@@ -285,7 +297,7 @@ function(input, output, session) {
     
     error=function(e) {
       # Report not available 
-      showNotification("Something went wrong. Please contact the support@statsomat.com. ",duration=20)
+      showNotification("Something went wrong. Please contact support@statsomat.com. ",duration=20)
       }
     )
     
