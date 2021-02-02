@@ -176,7 +176,7 @@ function(input, output, session) {
       session$reload()
     }
     
-    if (sum(grepl("_",colnames(datainput())))>0){
+    if (sum(grepl("_",input$selection1$right))>0){
       showNotification("Error: Underscores in column names currently not supported. ", duration=40)
       Sys.sleep(5)
       session$reload()
