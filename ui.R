@@ -226,7 +226,10 @@ f3 =~ -x7 +x8 +x9
              wellPanel(style = "background: #fff;", includeHTML("www/Also.html")),
              wellPanel(style = "background: #fff;", includeHTML("www/Contact.html"))
              
-      ) # column 
+      ), # column 
+      
+      column(1,)
+      
   ), # fluidrow
   
  includeHTML("www/Footer.html"),
