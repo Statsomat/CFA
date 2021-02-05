@@ -339,7 +339,7 @@ tryCatch({
     cat("Estimation Method: Maximum Likelihood. ", fill=TRUE)
     cat("\\newline",fill=TRUE) 
   } else {
-    cat("**Error: We cannot assume an approximately (multivariate) normal distribution of the data, which is required in this app. You could try to apply suitable transformations to the data before using this app. Other CFA methods for non-normally distributed data will be implemented soon. For (chargeable) support contact: support@statsomat.com**")
+    cat("**Error: We cannot assume an approximately (multivariate) normal distribution of the data, which is required by this app. You could try to apply suitable transformations to the data before using this app. Other CFA methods for non-normally distributed data will be implemented soon. For (chargeable) support contact: support@statsomat.com**")
   }
 }, 
 warning=function(w){

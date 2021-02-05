@@ -150,6 +150,33 @@ function(input, output, session) {
   })
   
   
+  
+  # Row limits 
+  observe({
+    
+    req(input$file, datainput())
+    
+    removeModal()
+    
+    
+    if (nrow(datainput()) > 1000){
+      showNotification("Error: For more than 1000 rows contact support@statsomat.com. ", duration=30)
+      Sys.sleep(5)
+      session$close()
+    }
+    
+    if (nrow(datainput()) < 100){
+      showNotification("Error: Minimum 100 observations required. ", duration=30)
+      Sys.sleep(5)
+      session$close()
+    }
+    
+    
+  })
+  
+  
+  
+  
   # Select Variables
   output$selection1 <- renderUI({
     
@@ -173,31 +200,20 @@ function(input, output, session) {
     if (length(unique(input$selection1$left)) != length(input$selection1$left)){
       showNotification("Error: The columns names of the dataset are not distinct. ", duration=40)
       Sys.sleep(5)
-      session$reload()
+      session$close()
     }
     
     if (sum(grepl("_",input$selection1$right))>0){
       showNotification("Error: Underscores in column names currently not supported. ", duration=40)
       Sys.sleep(5)
-      session$reload()
+      session$close()
     }
     
-    if (nrow(datainput()) > 10000){
-      showNotification("Limit reached: For a CFA with more than 1000 observations contact support@statsomat.com", duration=40)
-      Sys.sleep(5)
-      session$reload()
-    }
     
-    if (nrow(datainput()) < 100){
-      showNotification("Error: Minimum 100 observations required. ", duration=40)
-      Sys.sleep(5)
-      session$reload()
-    }
-    
-    if (length(input$selection1$right) > 100 ){
+    if (length(input$selection1$right) > 10 ){
       showNotification("Limit reached: For a CFA with more than 10 variables contact support@statsomat.com", duration=40)
       Sys.sleep(5)
-      session$reload()
+      session$close()
     }
     
   })

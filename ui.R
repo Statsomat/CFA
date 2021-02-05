@@ -4,7 +4,7 @@ shinyUI(fluidPage(
   
   # Disconnect message
   disconnectMessage(
-    text = "Error or your session timed out. ",
+    text = "Your session timed out or error. ",
     refresh = "Reload now",
     background = "#ff9900",
     colour = "white",
@@ -71,13 +71,13 @@ shinyUI(fluidPage(
   tags$div(a(img(src='Logo.jpg', width=200), href="https://www.statsomat.com", target="_blank")),
   
   h1("Confirmatory Factor Analysis", 
-     style = "font-family: 'Source Sans Pro';
+     style = "font-family: 'Helvetica';
      color: #fff; text-align: center;
      background-color: #396e9f;
      padding: 20px;
      margin-bottom: 0px;"),
   h5("Experimental Beta Version", 
-     style = "font-family: 'Source Sans Pro';
+     style = "font-family: 'Helvetica';
      color: #fff; text-align: center;
      background-color: #2fa42d;
      padding: 5px;
