@@ -160,7 +160,7 @@ function(input, output, session) {
     
     
     if (nrow(datainput()) > 1000){
-      showNotification("Error: For more than 1000 rows contact support@statsomat.com. ", duration=30)
+      showNotification("Maximum sample size exceeded. For more contact: support@statsomat.com", duration=30)
       Sys.sleep(5)
       session$close()
     }
@@ -211,7 +211,7 @@ function(input, output, session) {
     
     
     if (length(input$selection1$right) > 10 ){
-      showNotification("Limit reached: For a CFA with more than 10 variables contact support@statsomat.com", duration=40)
+      showNotification("Maximum number of columns exceeded. For more contact: support@statsomat.com", duration=30)
       Sys.sleep(5)
       session$close()
     }
