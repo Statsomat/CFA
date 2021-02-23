@@ -33,7 +33,7 @@ continuous <- function(col){
 # Compute outliers by knn proximity based method, liberal 
 knnoutlier <- function(data){
   data <- data[complete.cases(data),]
-  outliers_scores <- LOOP(data, k=5, lambda=3)
+  outliers_scores <- LOOP(data, k=10, lambda=3)
   outliers <- which(outliers_scores > 0.90, arr.ind = TRUE)
   return(outliers)
 } 

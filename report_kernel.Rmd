@@ -313,9 +313,12 @@ if (length(which(complete_rate < 1 & complete_rate > 0.95)) != 0L){
 try({
   if (length(knnoutlier(df_cont))>0){
     cat("Outliers: We suspect outliers in the data. If observations are erroneous, you could drop them and restart the app. Outliers may affect negatively the execution or the results of the CFA. These are the suspected row numbers: ")
-    outliers_rows <- df_cont[knnoutlier(df_cont),]
-    knitr::kable(outliers_rows, linesep = '', longtable = T, caption="Row(s) With Suspected Outliers", digits=1) %>%
-      kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
+    df_cont_unique <- unique(df_cont)
+    df_cont_complete <- df_cont[complete.cases(df_cont),]
+    outliers <- df_cont_complete[knnoutlier(df_cont),]
+    outliers_rows <- which(duplicated(rbind(outliers, df_cont_unique))) - length(knnoutlier(df_cont))
+    cat(outliers_rows, fill=TRUE)
+    cat("\\newline",fill=TRUE)
   } else {
     cat("Outliers: We cannot identify any statistically significant outliers. ", fill=TRUE)
     cat("\\newline",fill=TRUE) 
@@ -324,12 +327,10 @@ try({
 
 # Normality for complete and outlier deleted dataset 
 tryCatch({
-  df_norm <- df_cont 
-  if (length(knnoutlier(df_norm))>0){
-    outliers_rows <- as.integer(row.names(outliers_rows))
-    df_norm <- df_norm[-outliers_rows,]
+  df_norm <- df_cont[complete.cases(df_cont),]
+  if (length(knnoutlier(df_cont))>0){
+    df_norm <- df_norm[-knnoutlier(df_cont),]
   } 
-  df_norm <- df_norm[complete.cases(df_norm),]
   qqcors <- sapply(df_norm,normality)
   pnorm <- mvnorm.test(df_norm, 100)$p.value
   if (sum(!qqcors)==0 || pnorm > 0.01){
@@ -343,7 +344,7 @@ tryCatch({
   }
 }, 
 warning=function(w){
-  cat("Warning: A multivariate normality check of the data could ne be fulfilled. In the sequel we assume that the data is approximately multivariate normally distributed.")
+  cat("Warning: A multivariate normality check of the data could not be fulfilled. In the sequel we assume that the data is approximately multivariate normally distributed.")
   cat("\\newline",fill=TRUE) 
   cat("Estimation Method: Maximum Likelihood. ", fill=TRUE)
   eval3 <- TRUE
