@@ -130,7 +130,8 @@ shinyUI(fluidPage(
             
             wellPanel(style = "background: #adc7de;", 
                       
-                      h3("Select Variables (max 10)"),
+                      h3("Select Variables"),
+                      h5("Max 12 continuous. Only blanks as missings. "),
                       
                       uiOutput("selection1")
                     

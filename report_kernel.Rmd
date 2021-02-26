@@ -283,23 +283,23 @@ if (exists("df_cont")){
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-# Missings  > 5%
+# Missings  > 10%
 complete_rate <- sapply(df_cont, function(col) 1-(sum(is.na(col)) / dim(df)[1])) 
-if (length(which(complete_rate < 0.95)) != 0L){
-  cat("**Error: Execution stop because of limit on missing values. There exist continuous variables with more than 5% missing values. This app allows a max. of 5% missing values per observed variable. Please reconsider your data before using this app. **")
-  miss_var <- names(which(complete_rate < 0.95)) 
+if (length(which(complete_rate < 0.90)) != 0L){
+  cat("**Error: Execution stop because of limit on missing values. There exist continuous variables with more than 10% missing values. This app allows a max. of 10% missing values per observed variable. Please reconsider your data before using this app. **")
+  miss_var <- names(which(complete_rate < 0.90)) 
   eval2 <- FALSE
-  knitr::kable(miss_var, col.names = "Variable(s) with missing values", linesep = '', longtable = T) %>%
+  knitr::kable(miss_var, col.names = "Variable(s) with more than 10% missing values", linesep = '', longtable = T) %>%
     kable_styling(position = "center", full_width = FALSE, latex_options = c("HOLD_position","repeat_header"))
 }
 ``` 
 
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval2}
-# Missings in continuous <=5% 
+# Missings in continuous <= 10% 
 indic_missings <- FALSE
-if (length(which(complete_rate < 1 & complete_rate > 0.95)) != 0L){
-  cat("Missings: There exist variable(s) with <5% missing values. We assume a random missing pattern and apply a missing values imputation technique (FIML). ")
+if (length(which(complete_rate < 1 & complete_rate > 0.90)) != 0L){
+  cat("Missings: There exist variable(s) with < 10% missing values. We assume a random missing pattern and apply a missing values imputation technique (FIML). ")
   indic_missings <- TRUE
   miss_var <- names(which(complete_rate < 1)) 
   knitr::kable(miss_var, col.names = "Variable(s) with imputed missing values", linesep = '', longtable = T) %>%
@@ -340,11 +340,14 @@ tryCatch({
     cat("Estimation Method: Maximum Likelihood. ", fill=TRUE)
     cat("\\newline",fill=TRUE) 
   } else {
-    cat("**Error: We cannot assume an approximately (multivariate) normal distribution of the data, which is required by this app. You could try to apply suitable transformations to the data before using this app. Other CFA methods for non-normally distributed data will be implemented soon. For (chargeable) support contact: support@statsomat.com**")
+    cat("Warning: We cannot assume an approximately (multivariate) normal distribution of the data. Some p-values may be misleading. You could try to apply suitable transformations before using this app or consider other CFA methods especially designed to non-normally distributed data (coming soon also at Statsomat). For support contact: support@statsomat.com ")
+    cat("\\newline",fill=TRUE) 
+    cat("Estimation Method: Maximum Likelihood. ", fill=TRUE)
+    eval3 <- TRUE
   }
 }, 
 warning=function(w){
-  cat("Warning: A multivariate normality check of the data could not be fulfilled. In the sequel we assume that the data is approximately multivariate normally distributed.")
+  cat("Warning: A multivariate normality check of the data could not be fulfilled. An approximately (multivariate) normal distribution of the data is an assumption for large parts of this app. ")
   cat("\\newline",fill=TRUE) 
   cat("Estimation Method: Maximum Likelihood. ", fill=TRUE)
   eval3 <- TRUE

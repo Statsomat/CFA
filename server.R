@@ -165,8 +165,8 @@ function(input, output, session) {
       session$close()
     }
     
-    if (nrow(datainput()) < 100){
-      showNotification("Error: Minimum 100 observations required. ", duration=30)
+    if (nrow(datainput()) < 50){
+      showNotification("Error: Minimum 50 observations required. ", duration=30)
       Sys.sleep(5)
       session$close()
     }
@@ -210,7 +210,7 @@ function(input, output, session) {
     }
     
     
-    if (length(input$selection1$right) > 10 ){
+    if (length(input$selection1$right) > 12 ){
       showNotification("Maximum number of columns exceeded. For more contact: support@statsomat.com", duration=30)
       Sys.sleep(5)
       session$close()
