@@ -158,11 +158,13 @@ f3 =~ x7 + x8 + x9
             
           wellPanel(style = "background: #adc7de;", 
                       
-                      h3("Expected Sign of Factor Loadings"),
+                      h3("Optional: Expected Sign of Factor Loadings"),
                       
-                      h5("Is it a positive (zero included) or a negative association? "),
+                      h5("Do you expect a positive or a negative asscoiation? "),
                       
-                      h5("Overwrite the example below or leave it blank if you're unsure. Only lines containing the =~ operator are allowed. "),
+                      h5("Overwrite the example below or leave it blank if you're unsure. "),
+                      
+                      h5("Only lines containing the =~ operator are allowed. "),
                       
                       tags$style(type="text/css", "textarea {width:100%}"),
                       
