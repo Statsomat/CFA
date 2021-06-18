@@ -13,15 +13,15 @@ There is no need to install the Statsomat/CFA app since it runs in the browser. 
 Install the R package `devtools`
 
 Install the app 
-devtools::install_github("statsomat/cfa")
+```devtools::install_github("statsomat/cfa")```
 
 Run the app from the app folder
-shiny::runApp()
+```shiny::runApp()```
 
 Before running the app locally, please consider to install required packages (check `global.R` and `report_kernel.Rmd`). Complete dependencies can be listed by running following lines from the app folder (please ignore the error messages, 
 they are not fatal and are related to R issues https://github.com/rstudio/packrat/issues/385 and https://github.com/rstudio/rsconnect/issues/429):  
-install.packages("rsconnect")  
-appDependencies(appDir = getwd())
+```install.packages("rsconnect")  
+appDependencies(appDir = getwd())```
 
 
 # Example Usage
