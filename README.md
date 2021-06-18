@@ -32,7 +32,7 @@ appDependencies(appDir = getwd())
 
 # Example Usage
 You can find testing cases (datasets as CSV files and corresponding CFA models in lavaan model syntax) in the repository https://github.com/Statsomat/CFA-Testing. 
-Follow the Instructions of the app (described on the page https://statsomat.shinyapps.io/Confirmatory-factor-analysis/) to use the app. 
+Follow the Instructions of the app (described on the webpage of the app https://statsomat.shinyapps.io/Confirmatory-factor-analysis/) to use the app. 
 
 
 # Functionality
