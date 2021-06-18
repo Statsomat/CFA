@@ -4,8 +4,6 @@ options(shiny.sanitize.errors = TRUE)
 
 library(shiny)
 library(rmarkdown)
-library(anytime)
-library(mailR)
 library(data.table)
 library(readr)
 library(shinydisconnect)
