@@ -19,13 +19,13 @@ Run the app from the app folder
 shiny::runApp()
 
 Before running the app locally, please consider to install required packages (check `global.R` and `report_kernel.Rmd`). Complete dependencies can be listed by running following lines from the app folder (please ignore the error messages, 
-they are not fatal and are related to R issues https://github.com/rstudio/packrat/issues/385 and https://github.com/rstudio/rsconnect/issues/429).
-install.packages("rsconnect")
+they are not fatal and are related to R issues https://github.com/rstudio/packrat/issues/385 and https://github.com/rstudio/rsconnect/issues/429):  
+install.packages("rsconnect")  
 appDependencies(appDir = getwd())
 
 
 # Example Usage
-You can find testing cases (datasets as CSV files and corresponding CFA models in lavaan model syntax) in the repository Statsomat/CFA-Testing. 
+You can find testing cases (datasets as CSV files and corresponding CFA models in lavaan model syntax) in the repository https://github.com/Statsomat/CFA-Testing. 
 Follow the Instructions of the app (described on the page https://statsomat.shinyapps.io/Confirmatory-factor-analysis/) to use the app. 
 
 
@@ -38,16 +38,16 @@ enables locally reproducibles results. The current version supports only approxi
 
 # Tests 
 The app was calibrated and tested by using the HolzingerSwineford1939 dataset contained in the R package `lavaan`
-and (simulated) data cases from literature. The repository Statsomat/CFA-Testing contains the test data cases and results for this version.   
+and (simulated) data cases from literature. The repository https://github.com/Statsomat/CFA-Testing contains the test data cases and results for this version.   
 
 
 
 # Community 
-1) Contribute to the software
+1) Contribute to the software:
 You are welcome to improve and extend the functionality of the app. If you want to make a pull request, please check that you can run test cases locally without any errors or warnings. Please consider to test your changes also on shinyapps.io.
 
-2) Report issues or problems with the software
+2) Report issues or problems with the software:
 Please open an issue in this repository to report any bugs. 
 
-3) Seek support
+3) Seek support:
 We try to answer all questions in reasonable time  but general support is limited. 
