@@ -26,7 +26,7 @@ Before running the app locally, please consider to install required packages (ch
 
 
 # Example Usage
-The dataset HolzingerSwineford1939.csv extracted from the R package `lavaan` is contained in the repository and can bes used as an example. Select only the variables `x1-x9` for a CFA. Type this model into the *Type Your Model* text area block, generate the report and finally download the report. 
+The dataset HolzingerSwineford1939.csv extracted from the R package `lavaan` is contained in the repository and can be used as an example. Select only the variables `x1-x9` for a CFA. Type this model into the *Type Your Model* text area block, generate the report and finally download the report. 
 ```
 visual =~ x1 + x2 + x3
 textual =~ x4 + x5 + x6
