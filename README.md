@@ -12,12 +12,12 @@ There is no need to install the Statsomat/CFA app since it runs in the browser. 
 
 Install the R package `devtools`
 
-Install the app 
+Install the app:  
 ```
 devtools::install_github("statsomat/cfa")
 ```
 
-Run the app from the app folder
+Run the app from the project folder: 
 ```
 shiny::runApp()
 ```
