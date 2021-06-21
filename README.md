@@ -22,17 +22,11 @@ Run the app from the app folder
 shiny::runApp()
 ```
 
-Before running the app locally, please consider to install required packages (check `global.R` and `report_kernel.Rmd`). Complete dependencies can be listed by running following lines from the app folder (please ignore the error messages, 
-they are not fatal and are related to R issues https://github.com/rstudio/packrat/issues/385 and https://github.com/rstudio/rsconnect/issues/429):  
-```
-install.packages("rsconnect")  
-appDependencies(appDir = getwd())
-```
+Before running the app locally, please consider to install required packages (check them in `global.R` and `report_kernel.Rmd`). A list of complete dependencies can be found in `dependencies.txt`. 
 
 
 # Example Usage
-You can find testing cases (datasets as CSV files and corresponding CFA models in lavaan model syntax) in the repository https://github.com/Statsomat/CFA-Testing. 
-Follow the Instructions of the app (described on the webpage of the app https://statsomat.shinyapps.io/Confirmatory-factor-analysis/) to use the app. 
+You can find testing cases (datasets as CSV files and corresponding CFA models in lavaan model syntax) in the testing repository of the app https://github.com/Statsomat/CFA-Testing. Follow the *Instructions* described directly on the webpage of the app https://statsomat.shinyapps.io/Confirmatory-factor-analysis/. 
 
 
 # Functionality
