@@ -44,7 +44,7 @@ and (simulated) data cases from literature. The repository https://github.com/St
 
 # Community 
 1) Contribute to the software:
-You are welcome to improve and extend the functionality of the app. If you want to make a pull request, please check that you can run test cases locally without any errors or warnings. Please consider to test your changes also on [shinyapps.io] (ignore the non-fatal errors mentioned also above). 
+You are welcome to improve and extend the functionality of the app. If you want to make a pull request, please check that you can run test cases locally without any errors or warnings. Please consider to test your changes also on [shinyapps.io](https://www.shinyapps.io/) (ignore the non-fatal errors mentioned also above). 
 
 2) Report issues or problems with the software:
 Please open an issue in this repository to report any bugs. 
