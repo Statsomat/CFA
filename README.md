@@ -3,8 +3,8 @@
 The Statsomat/CFA app is a web-based
 application for automated Confirmatory Factor Analysis (CFA) based mainly on the R package `lavaan` and created with the Shiny
 technology. The Statsomat/CFA app is hosted on [shinyapps.io](https://www.shinyapps.io/) and 
-is one of several apps which can be accessed via the webpage of Statsomat (see https://statsomat.com), a nonprofit company with the aim of developing, 
-collecting and maintaining open-source apps for automated data analysis, interpretation and explanation. You can access the app directly here https://statsomat.shinyapps.io/Confirmatory-factor-analysis/. 
+is one of several apps which can be accessed via the webpage of *Statsomat* (see https://statsomat.com), a nonprofit company with the aim of developing, 
+collecting and maintaining open-source apps for automated data analysis, interpretation and explanation. You can also access the app directly here https://statsomat.shinyapps.io/Confirmatory-factor-analysis/. 
 
 
 # Installation 
