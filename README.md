@@ -33,7 +33,7 @@ textual =~ x4 + x5 + x6
 speed =~ x7 + x8 + x9
 ```
 
-Follow also the *Instructions* described directly on the webpage of the app https://statsomat.shinyapps.io/Confirmatory-factor-analysis/. You can find more testing cases (datasets as CSV files and corresponding CFA models in lavaan model syntax) in the testing repository of the app https://github.com/Statsomat/CFA-Testing. 
+Follow also the *Instructions* described directly on the webpage of the app https://statsomat.shinyapps.io/Confirmatory-factor-analysis/. You can find more testing cases (datasets as CSV files and corresponding CFA models in `lavaan` model syntax) in the testing repository https://github.com/Statsomat/CFA-Testing. 
 
 
 # Functionality
@@ -51,7 +51,7 @@ and (simulated) data cases from literature. The repository https://github.com/St
 
 # Community 
 1) Contribute to the software:
-You are welcome to improve and extend the functionality of the app. If you want to make a pull request, please check that you can run test cases locally without any errors or warnings. Please consider to test your changes also on [shinyapps.io](https://www.shinyapps.io/) (ignore the non-fatal errors mentioned also above). 
+You are welcome to improve and extend the functionality of the app. If you want to make a pull request, please check that you can run test cases locally without any errors or warnings. Please consider to test your changes also on [shinyapps.io](https://www.shinyapps.io/). 
 
 2) Report issues or problems with the software:
 Please open an issue in this repository to report any bugs. 
