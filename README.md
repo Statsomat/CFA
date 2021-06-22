@@ -51,7 +51,7 @@ and (simulated) data cases from literature. The repository https://github.com/St
 
 # Community 
 1) Contribute to the software:
-You are welcome to improve and extend the functionality of the app. If you want to make a pull request, please check that you can run test cases locally without any errors or warnings. Please consider to test your changes also on [shinyapps.io](https://www.shinyapps.io/). 
+You are welcome to improve and extend the functionality of the app. If you want to make a pull request, please check that you can run test cases locally without any errors or warnings. Please consider to test your changes also on [shinyapps.io](https://www.shinyapps.io/). While uploading, ignore the `Error in eval(x, envir = envir)`, it is a non-fatal error, also related to related to https://github.com/rstudio/packrat/issues/385 and https://github.com/rstudio/rsconnect/issues/429.  
 
 2) Report issues or problems with the software:
 Please open an issue in this repository to report any bugs. 
