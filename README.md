@@ -3,8 +3,8 @@
 The Statsomat/CFA app is a web-based
 application for automated Confirmatory Factor Analysis (CFA) based mainly on the R package `lavaan` and created with the Shiny
 technology. The Statsomat/CFA app is hosted on [shinyapps.io](https://www.shinyapps.io/) and 
-is one of several apps which can be accessed via the webpage of Statsomat (see https://statsomat.com), a nonprofit company with the aim of developing, 
-collecting and maintaining open-source apps for automated data analysis, interpretation and explanation. You can access the app directly here https://statsomat.shinyapps.io/Confirmatory-factor-analysis/. 
+is one of several apps which can be accessed via the webpage of *Statsomat* (see https://statsomat.com), a nonprofit company with the aim of developing, 
+collecting and maintaining open-source apps for automated data analysis, interpretation and explanation. You can also access the app directly here https://statsomat.shinyapps.io/Confirmatory-factor-analysis/. 
 
 
 # Installation 
@@ -12,27 +12,28 @@ There is no need to install the Statsomat/CFA app since it runs in the browser. 
 
 Install the R package `devtools`
 
-Install the app 
+Install the app:  
 ```
 devtools::install_github("statsomat/cfa")
 ```
 
-Run the app from the app folder
+Run the app from the project folder: 
 ```
 shiny::runApp()
 ```
 
-Before running the app locally, please consider to install required packages (check `global.R` and `report_kernel.Rmd`). Complete dependencies can be listed by running following lines from the app folder (please ignore the error messages, 
-they are not fatal and are related to R issues https://github.com/rstudio/packrat/issues/385 and https://github.com/rstudio/rsconnect/issues/429):  
-```
-install.packages("rsconnect")  
-appDependencies(appDir = getwd())
-```
+Before running the app locally, please consider to install required packages (check them in `global.R` and `report_kernel.Rmd`). A list of complete dependencies can be found in `dependencies.txt`. 
 
 
 # Example Usage
-You can find testing cases (datasets as CSV files and corresponding CFA models in lavaan model syntax) in the repository https://github.com/Statsomat/CFA-Testing. 
-Follow the Instructions of the app (described on the webpage of the app https://statsomat.shinyapps.io/Confirmatory-factor-analysis/) to use the app. 
+The dataset HolzingerSwineford1939.csv extracted from the R package `lavaan` is contained in the repository and can be used as an example. Select only the variables `x1-x9` for a CFA. Type this model into the *Type Your Model* text area block, generate the report and finally download the report. 
+```
+visual =~ x1 + x2 + x3
+textual =~ x4 + x5 + x6
+speed =~ x7 + x8 + x9
+```
+
+Follow also the *Instructions* described directly on the webpage of the app https://statsomat.shinyapps.io/Confirmatory-factor-analysis/. You can find more testing cases (datasets as CSV files and corresponding CFA models in `lavaan` model syntax) in the testing repository https://github.com/Statsomat/CFA-Testing. 
 
 
 # Functionality
@@ -50,7 +51,7 @@ and (simulated) data cases from literature. The repository https://github.com/St
 
 # Community 
 1) Contribute to the software:
-You are welcome to improve and extend the functionality of the app. If you want to make a pull request, please check that you can run test cases locally without any errors or warnings. Please consider to test your changes also on shinyapps.io (ignore the non-fatal errors mentioned also above). 
+You are welcome to improve and extend the functionality of the app. If you want to make a pull request, please check that you can run test cases locally without any errors or warnings. Please consider to test your changes also on [shinyapps.io](https://www.shinyapps.io/). 
 
 2) Report issues or problems with the software:
 Please open an issue in this repository to report any bugs. 
