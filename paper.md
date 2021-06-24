@@ -51,7 +51,7 @@ interpretation and explanation.
 Applied researchers with intermediate to advanced statistical and R programming knowledge can 
 perform a CFA by using for example functions from the R package lavaan [@lavaan] and [RStudio](https://www.rstudio.com/)
 as the IDE. On top of that, they need to interpret and explain an extensive numerical and graphical output to finally 
-decide for the acception or rejection of an assumed model. Finally they need to explain and write down the decision. 
+decide for the acceptance or rejection of an assumed model. Finally they need to explain and write down the decision. 
 In comparison, applied researchers unfamiliar with the aforementioned topics, could use the Statsomat/CFA app directly in the browser to generate
 results that are similar to a human-based analysis. To the best of our knowledge, there are no other web-based applications enabling automated CFA interpretation. 
 The graphical user interface of Statsomat/CFA offers a sufficient but minimal user-interaction with the aim of a maximal automation. 
