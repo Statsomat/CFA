@@ -8,7 +8,7 @@ collecting and maintaining open-source apps for automated data analysis, interpr
 
 
 # Installation 
-There is no need to install the Statsomat/CFA app since it runs in the browser. If you really want to run it locally, then download the repository and run the app from the project folder: 
+There is no need to install the Statsomat/CFA app since it runs in the browser. If you really want to run it locally, then clone the repository and run the app from the project folder: 
 
 ```
 shiny::runApp()
