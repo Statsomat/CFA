@@ -76,7 +76,7 @@ shinyUI(fluidPage(
      background-color: #396e9f;
      padding: 20px;
      margin-bottom: 0px;"),
-  h5("Experimental", 
+  h5("Statsomat/CFA", 
      style = "font-family: 'Helvetica';
      color: #fff; text-align: center;
      background-color: #2fa42d;

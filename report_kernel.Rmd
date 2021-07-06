@@ -666,7 +666,7 @@ cat("\n# Interpretation", fill=TRUE)
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
 cat("\n## Goodness of Fit Indices", fill=TRUE)
-cat("We consider some of the model fit indices from the Model Fit Summary section to check the goodness-of-fit of the model. To decide for an acceptable or non-acceptable model, we apply in general thresholds considered in Brown [@brown] and Kline [@kline]. ", fill=TRUE)
+cat("We consider some of the model fit indices from the Model Fit Summary section to check the goodness-of-fit of the model. To decide for the goodness-of-fit, we apply (data-dependent) thresholds mentioned for example in Brown [@brown] and general domain literature. ", fill=TRUE)
 ```
 
 ```{r, results="asis", dev="cairo_pdf", eval=eval5}
