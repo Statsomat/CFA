@@ -8,5 +8,5 @@ library(data.table)
 library(readr)
 library(shinydisconnect)
 
-source("chooser.R")
+source("helpers/chooser.R")
 source("helpers/Functions.R")
