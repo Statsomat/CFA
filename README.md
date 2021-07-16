@@ -3,7 +3,7 @@
 The Statsomat/CFA app is a web-based
 application for automated Confirmatory Factor Analysis (CFA) based mainly on the R package `lavaan` and created with the Shiny
 technology. The Statsomat/CFA app is hosted on [shinyapps.io](https://www.shinyapps.io/) and 
-is one of several apps which can be accessed via the webpage of *Statsomat* (see https://statsomat.com), a nonprofit company with the aim of developing, 
+is one of several apps which can be accessed via the webpage of *Statsomat* (see https://statsomat.com), a nonprofit portal with the aim of developing, 
 collecting and maintaining open-source apps for automated data analysis, interpretation and explanation. You can also access the app directly here https://statsomat.shinyapps.io/Confirmatory-factor-analysis/. 
 
 
@@ -14,7 +14,7 @@ There is no need to install the Statsomat/CFA app since it runs in the browser. 
 shiny::runApp()
 ```
 
-Before running the app locally, please consider to install required packages (check them in `global.R` and `report_kernel.Rmd`). A list of complete dependencies can be found in `dependencies.txt`. 
+Before running the app locally, please consider to install required packages (check them in `global.R` and `report_kernel.Rmd`). 
 
 
 # Example Usage
@@ -25,8 +25,7 @@ textual =~ x4 + x5 + x6
 speed =~ x7 + x8 + x9
 ```
 
-Follow also the *Instructions* described directly on the webpage of the app https://statsomat.shinyapps.io/Confirmatory-factor-analysis/. You can find more testing cases (datasets as CSV files and corresponding CFA models in `lavaan` model syntax) in the testing repository https://github.com/Statsomat/CFA-Testing. 
-
+Follow also the *Instructions* described directly on the webpage of the app https://statsomat.shinyapps.io/Confirmatory-factor-analysis/. 
 
 # Functionality
 The user uploads its data as a CSV file, types the CFA model in `lavaan` model syntax directly in 
@@ -37,7 +36,7 @@ enables locally reproducibles results. The current version supports only approxi
 
 # Tests 
 The app was calibrated and tested by using the HolzingerSwineford1939 dataset contained in the R package `lavaan`
-and (simulated) data cases from literature. The repository https://github.com/Statsomat/CFA-Testing contains the test data cases and results for this version.   
+and (simulated) data cases from literature. 
 
 
 
