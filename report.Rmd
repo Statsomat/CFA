@@ -8,7 +8,6 @@ output:
     toc: true
     toc_depth: 2
 bibliography: ["references.bib"]
-fontsize: 9pt
 params:
   data: NA
   filename: NA

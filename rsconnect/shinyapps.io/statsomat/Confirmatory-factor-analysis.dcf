@@ -5,9 +5,9 @@ account: statsomat
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3422437
-bundleId: 4791701
+bundleId: 4825420
 url: https://statsomat.shinyapps.io/Confirmatory-factor-analysis/
-when: 1625574310.71
-lastSyncTime: 1625574310.71
+when: 1626425209.11596
+lastSyncTime: 1626425209.11596
 asMultiple: FALSE
 asStatic: FALSE
