@@ -1,4 +1,4 @@
-MAX_FILE_SIZE_MB <- 1L
+MAX_FILE_SIZE_MB <- 5L
 options(shiny.maxRequestSize = MAX_FILE_SIZE_MB*1024^2)
 options(shiny.sanitize.errors = TRUE)
 
