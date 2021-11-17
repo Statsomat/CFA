@@ -979,13 +979,15 @@ if (rmseanull < 0.158){
         } else if (chi2 == 1L && rmsea > 0L){
           cat("The Chi² model fit index, the RMSEA and the CFI suggest an acceptable model fit. We tentatively assume an acceptable model fit and verify this assertion by considering further metrics. ")
           step1<-17
+        
+        } else if (chi2 == 0L && srmr == 0L && rmsea == 0L){
+          cat("The Chi² model fit index, the RMSEA and the CFI suggest a poor model fit. Therefore, we assume a poor model fit and proceed by diagnosing the sources of possible misspecification. ")
+          step1<-100
         } 
     
       }
     }
 }
-
-
 
 ```
 
@@ -1473,7 +1475,7 @@ if (length(which(pe_stand2$Check=="Not ok!"))>0){
 } else if (respecification==FALSE){
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
     cat("Considering the goodness-of-fit indices, the model is acceptable. Moreover, we cannot identify localized areas of ill fit. We conclude that the model is acceptable. ")
-  } else if (step1 %in% c(0,1,12)){
+  } else if (step1 %in% c(0,1,12,100)){
     cat("Considering the goodness-of-fit indices, the model is non-acceptable. We conclude that the model is non-acceptable. Nevertheless, we cannot identify any significant and relevant localized areas of ill fit. We strongly recommend an additional human-based CFA. For (chargeable) support contact support@statsomat.com")
   } else {
     cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Nevertheless, we cannot identify any significant and relevant localized areas of ill fit. We cautiously conclude that the model is poor but acceptable. We strongly recommend the confirmation by a human-based CFA. For (chargeable) support contact support@statsomat.com")
@@ -1483,7 +1485,7 @@ if (length(which(pe_stand2$Check=="Not ok!"))>0){
   
   if (step1 %in% c(4,8,9,10,11,14,15,16,17)){
     cat("Considering the goodness-of-fit indices, the model is acceptable. Nevertheless, there exist some localized areas of questionable fit. Consider the next recommendations before finally concluding that the model is acceptable. ")
-  } else if (step1 %in% c(0,1,12)){
+  } else if (step1 %in% c(0,1,12,100)){
     cat("Considering the goodness-of-fit indices, the model is non-acceptable. Moreover, there exist localized areas of ill fit. Therefore, we conclude that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following respicification ideas. ")
   } else {
     cat("Considering the goodness-of-fit indices, the quality of the model is uncertain. Moreover, there exist localized areas of ill fit. Therefore, we conclude that the model is non-acceptable. Please reconsider your data and the theory behind. Only if supported by theory, you could try to respecify the model and improve the goodness-of-fit by applying (one of the) following respicification ideas. ")

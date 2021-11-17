@@ -131,7 +131,7 @@ shinyUI(fluidPage(
             wellPanel(style = "background: #adc7de;",
 
                       h3("Select Variables"),
-                      h5("Max 25 continuous. Only blanks as missings. "),
+                      h5("Max 25 continuous. Only blanks as missings. Minus and underscores currently not allowed in column names. "),
 
                       uiOutput("selection1")
 
